@@ -11,6 +11,8 @@ class SwissDialectDataset(Dataset):
         self.ivectors = self.load_ivectors(vec_file)
         self.labels = self.load_labels(txt_file)
         self.n_samples = self.ivectors.shape[0]
+        self.n_params = self.ivectors.shape[1]
+        self.n_classes = len(self.dialect_map)
 
     def load_ivectors(self, vec_file):
         with open(vec_file) as in_file:
