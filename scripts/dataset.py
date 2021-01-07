@@ -10,7 +10,6 @@ DIALECT_MAP = {"LU": 0, "BE": 1, "ZH": 2, "BS": 3}
 
 
 class SwissDialectDataset(Dataset):
-
     def __init__(self, ivectors: np.ndarray, labels: np.ndarray):
         self.ivectors = torch.from_numpy(ivectors)
         self.labels = torch.from_numpy(labels)
@@ -42,7 +41,11 @@ def load_labels(txt_file: str) -> np.ndarray:
 
 
 def combine_data(
-    train_vec_file: str, train_txt_file: str, dev_vec_file: str, dev_txt_file: str, shuffled=True
+    train_vec_file: str,
+    train_txt_file: str,
+    dev_vec_file: str,
+    dev_txt_file: str,
+    shuffled=True,
 ) -> Tuple[np.ndarray, np.ndarray]:
 
     train_ivectors = load_ivectors(train_vec_file)

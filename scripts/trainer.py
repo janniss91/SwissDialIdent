@@ -1,4 +1,4 @@
-import numpy as np
+from numpy import ndarray
 from torch import Tensor
 from torch.utils.data import DataLoader
 from sklearn.model_selection import KFold
@@ -11,8 +11,8 @@ class Trainer:
     def __init__(
         self,
         model_type,  # DataType: [LogisticRegression, ...]
-        ivectors: np.ndarray,
-        labels: np.ndarray,
+        ivectors: ndarray,
+        labels: ndarray,
         n_epochs=10,
         batch_size=10,
         lr=0.01,
@@ -26,7 +26,8 @@ class Trainer:
         self.lr = lr
         self.logging_interval = logging_interval
 
-        self.models_and_metrics = []
+        # Dicts including metrics are stored here after running cross_validation.
+        self.cv_metrics = []
 
     def train(self):
         raise NotImplementedError(
@@ -62,9 +63,9 @@ class Trainer:
             # This way it can be compared to the performance after training.
             self.test(model, test_dataset, verbose=verbose)
 
-            model, train_losses, train_counter, test_losses, test_counter = self.train(
-                model, train_dataset, test_dataset, verbose
-            )
+            _, metrics = self.train(model, train_dataset, test_dataset, verbose)
+
+            self.cv_metrics.append(("LogisicRegression-split-" + str(k), metrics))
 
     def print_train_metrics(
         self,

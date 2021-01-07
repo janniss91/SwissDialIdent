@@ -2,7 +2,6 @@ import torch
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 
-from dataset import combine_data
 from dataset import SwissDialectDataset
 from metrics import Metrics
 from trainer import Trainer
@@ -57,10 +56,12 @@ class LogisticRegressionTrainer(Trainer):
                     if verbose:
                         self.print_train_metrics(epoch, batch_id, ivector_batch, train_loader, loss)
 
-            test_loss = self.test(model, dev_dataset, verbose)
+            metrics, test_loss = self.test(model, dev_dataset, verbose)
             test_losses.append(test_loss)
 
-        return model, train_losses, train_counter, test_losses, test_counter
+        metrics.store_losses(train_losses, train_counter, test_losses, test_counter)
+
+        return model, metrics
 
     def test(self, model: LogisticRegression, dev_dataset: SwissDialectDataset, verbose: bool):
 
@@ -80,29 +81,10 @@ class LogisticRegressionTrainer(Trainer):
 
         # The metrics object requires numpy arrays instead of torch tensors.
         metrics = Metrics(dev_dataset.labels.numpy(), all_preds.numpy())
-        self.models_and_metrics.append((model, metrics))
 
         test_loss /= len(dev_loader.dataset)
 
-        print(type(test_loss))
-        print(type(correct))
         if verbose:
             self.print_test_metrics(test_loss, correct, dev_loader, metrics)
 
-        return test_loss
-
-
-if __name__ == "__main__":
-    train_vec_file = "data/train.vec"
-    train_txt_file = "data/train.txt"
-    dev_vec_file = "data/dev.vec"
-    dev_txt_file = "data/dev.txt"
-
-    all_ivectors, all_labels = combine_data(
-        train_vec_file, train_txt_file, dev_vec_file, dev_txt_file
-    )
-
-    model_type = LogisticRegression
-
-    trainer = LogisticRegressionTrainer(model_type, all_ivectors, all_labels, n_epochs=3)
-    best_model = trainer.cross_validation(verbose=True)
+        return metrics, test_loss
