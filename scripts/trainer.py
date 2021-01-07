@@ -23,7 +23,7 @@ class Trainer:
         self.lr = lr
         self.logging_interval = logging_interval
 
-        self.models = []
+        self.models_and_metrics = []
 
     def train(self):
         raise NotImplementedError(
@@ -32,12 +32,12 @@ class Trainer:
 
     def test(self):
         raise NotImplementedError(
-            "The train method can only be run from a subclass of Trainer."
+            "The test method can only be run from a subclass of Trainer."
         )
 
-    def cross_validation(self, k=10):
+    def cross_validation(self, k=10, verbose=False):
         kfold = KFold(k)
-        for train_ids, test_ids in kfold.split(self.labels):
+        for k, (train_ids, test_ids) in enumerate(kfold.split(self.labels), start=1):
 
             train_ivecs = self.ivectors[train_ids]
             train_labels = self.labels[train_ids]
@@ -52,10 +52,13 @@ class Trainer:
 
             model = self.model_type(input_dim, output_dim)
 
+            if verbose:
+                print("K-Fold Cross validation: k=" + str(k))
+
             # Test the performance on the dev set with randomly initialized weights.
             # This way it can be compared to the performance after training.
-            self.test(model, test_dataset)
+            self.test(model, test_dataset, verbose=verbose)
 
             model, train_losses, train_counter, test_losses, test_counter = self.train(
-                model, train_dataset, test_dataset
+                model, train_dataset, test_dataset, verbose
             )
