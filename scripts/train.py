@@ -1,6 +1,10 @@
+from typing import List
+from typing import Tuple
+
 from dataset import combine_data
 from logistic_regression import LogisticRegression
 from logistic_regression import LogisticRegressionTrainer
+from metrics import Metrics
 
 
 def select_model(
@@ -8,12 +12,12 @@ def select_model(
     labels,
     # Todo: Check if these metrics should be different for different models.
     # Maybe use lists of batch sizes and learning rates (e.g.).
-    n_epochs=10,
-    batch_size=10,
-    lr=0.01,
-    logging_interval=50,
-    k=10,
-    verbose=False,
+    n_epochs: int = 10,
+    batch_size: int = 10,
+    lr: int = 0.01,
+    logging_interval: int = 50,
+    k: int = 10,
+    verbose: bool = False,
 ):
 
     metrics_all_models = []
@@ -38,7 +42,7 @@ def select_model(
     return best_model
 
 
-def compare_metrics(metrics_all_models):
+def compare_metrics(metrics_all_models: List[List[Tuple[str, Metrics]]]):
     # Todo: Put the metrics of all CVs from all models in here and
     pass
 

@@ -13,10 +13,10 @@ class Trainer:
         model_type,  # DataType: [LogisticRegression, ...]
         ivectors: ndarray,
         labels: ndarray,
-        n_epochs=10,
-        batch_size=10,
-        lr=0.01,
-        logging_interval=50,
+        n_epochs: int = 10,
+        batch_size: int = 10,
+        lr: int = 0.01,
+        logging_interval: int = 50,
     ):
         self.model_type = model_type
         self.ivectors = ivectors
@@ -26,7 +26,6 @@ class Trainer:
         self.lr = lr
         self.logging_interval = logging_interval
 
-        # Dicts including metrics are stored here after running cross_validation.
         self.cv_metrics = []
 
     def train(self):
@@ -39,7 +38,7 @@ class Trainer:
             "The test method can only be run from a subclass of Trainer."
         )
 
-    def cross_validation(self, k=10, verbose=False):
+    def cross_validation(self, k: int = 10, verbose: bool = False):
         kfold = KFold(k)
         for k, (train_ids, test_ids) in enumerate(kfold.split(self.labels), start=1):
 
