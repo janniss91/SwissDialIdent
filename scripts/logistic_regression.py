@@ -46,22 +46,16 @@ class LogisticRegressionTrainer(Trainer):
                 loss = criterion(outputs, batch_labels)
                 loss.backward()
                 optimizer.step()
-                if verbose:
-                    if batch_id % self.logging_interval == 0:
-                        print(
-                            "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                                epoch,
-                                batch_id * len(ivector_batch),
-                                len(train_loader.dataset),
-                                100.0 * batch_id / len(train_loader),
-                                loss.item(),
-                            )
-                        )
-                        train_losses.append(loss.item())
-                        train_counter.append(
-                            (batch_id * self.batch_size)
-                            + ((epoch - 1) * len(train_loader.dataset))
-                        )
+
+                if batch_id % self.logging_interval == 0:
+                    train_losses.append(loss.item())
+                    train_counter.append(
+                        (batch_id * self.batch_size)    
+                        + ((epoch - 1) * len(train_loader.dataset))
+                    )
+
+                    if verbose:
+                        self.print_train_metrics(epoch, batch_id, ivector_batch, train_loader, loss)
 
             test_loss = self.test(model, dev_dataset, verbose)
             test_losses.append(test_loss)
@@ -88,20 +82,12 @@ class LogisticRegressionTrainer(Trainer):
         metrics = Metrics(dev_dataset.labels.numpy(), all_preds.numpy())
         self.models_and_metrics.append((model, metrics))
 
+        test_loss /= len(dev_loader.dataset)
 
-
+        print(type(test_loss))
+        print(type(correct))
         if verbose:
-            test_loss /= len(dev_loader.dataset)
-            print(
-                "\nTest set: Avg. loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-                    test_loss,
-                    correct,
-                    len(dev_loader.dataset),
-                    # 100.0 * correct / len(dev_loader.dataset),
-                    100.0 * metrics.accuracy
-                )
-            )
-            metrics.print()
+            self.print_test_metrics(test_loss, correct, dev_loader, metrics)
 
         return test_loss
 
