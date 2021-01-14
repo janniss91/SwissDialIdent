@@ -8,3 +8,6 @@ class TrainLogger:
 
     def log_losses():
         pass
+
+    def calculate_runtime():
+        pass

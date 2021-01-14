@@ -15,7 +15,7 @@ def select_model(
     n_epochs: int = 10,
     batch_size: int = 10,
     lr: int = 0.01,
-    logging_interval: int = 50,
+    print_interval: int = 50,
     k: int = 10,
     verbose: bool = False,
 ):
@@ -32,7 +32,7 @@ def select_model(
             n_epochs=n_epochs,
             batch_size=batch_size,
             lr=lr,
-            logging_interval=logging_interval,
+            print_interval=print_interval,
         )
         trainer.cross_validation(verbose=True, k=k)
         metrics_all_models.append(trainer.cv_metrics)

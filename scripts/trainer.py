@@ -16,7 +16,7 @@ class Trainer:
         n_epochs: int = 10,
         batch_size: int = 10,
         lr: int = 0.01,
-        logging_interval: int = 50,
+        print_interval: int = 50,
     ):
         self.model_type = model_type
         self.ivectors = ivectors
@@ -24,7 +24,7 @@ class Trainer:
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.lr = lr
-        self.logging_interval = logging_interval
+        self.print_interval = print_interval
 
         self.cv_metrics = []
 
