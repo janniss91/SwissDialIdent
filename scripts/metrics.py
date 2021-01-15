@@ -7,6 +7,7 @@ class Metrics:
     def __init__(self, true: ndarray, pred: ndarray):
         self.true = true
         self.pred = pred
+        # The order of the labels MUST REMAIN this way!
         self.label_names = ["LU", "BE", "ZH", "BS"]
 
         self.set_up_metrics()

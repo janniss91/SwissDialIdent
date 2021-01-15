@@ -1,3 +1,4 @@
+import time
 import torch
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
@@ -34,6 +35,9 @@ class LogisticRegressionTrainer(Trainer):
         test_losses = []
         test_counter = [i * len(train_loader.dataset) for i in range(self.n_epochs + 1)]
 
+        train_time = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
+        start_time = time.time()
+
         for epoch in range(1, self.n_epochs + 1):
             for batch_id, (ivector_batch, batch_labels) in enumerate(train_loader):
                 ivector_batch = Variable(ivector_batch)
@@ -45,7 +49,7 @@ class LogisticRegressionTrainer(Trainer):
                 loss.backward()
                 optimizer.step()
 
-                if batch_id % self.print_interval == 0:
+                if batch_id % self.log_interval == 0:
                     train_losses.append(loss.item())
                     train_counter.append(
                         (batch_id * self.batch_size)
@@ -60,7 +64,11 @@ class LogisticRegressionTrainer(Trainer):
             metrics, test_loss = self.test(model, dev_dataset, verbose)
             test_losses.append(test_loss)
 
+        end_time = time.time()
+        runtime = round(end_time - start_time, 2)
+
         metrics.store_losses(train_losses, train_counter, test_losses, test_counter)
+        self.logger(train_time, runtime, metrics)
 
         return model, metrics
 

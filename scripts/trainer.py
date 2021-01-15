@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import KFold
 
 from dataset import SwissDialectDataset
+from logging import TrainLogger
 from metrics import Metrics
 
 
@@ -16,7 +17,7 @@ class Trainer:
         n_epochs: int = 10,
         batch_size: int = 10,
         lr: int = 0.01,
-        print_interval: int = 50,
+        log_interval: int = 50,
     ):
         self.model_type = model_type
         self.ivectors = ivectors
@@ -24,9 +25,16 @@ class Trainer:
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.lr = lr
-        self.print_interval = print_interval
+        self.log_interval = log_interval
 
         self.cv_metrics = []
+        self.logger = TrainLogger(
+            self.model_type,
+            self.n_epochs,
+            self.batch_size,
+            self.lr,
+            self.log_interval,
+        )
 
     def train(self):
         raise NotImplementedError(
@@ -58,10 +66,13 @@ class Trainer:
             if verbose:
                 print("K-Fold Cross validation: k=" + str(k))
 
-            # Test the performance on the dev set with randomly initialized weights.
-            # This way it can be compared to the performance after training.
+            # Test the performance on the dev set with randomly initialized
+            # weights. This way it can be compared to the performance after
+            # training.
             self.test(model, test_dataset, verbose=verbose)
 
+            # The underscore variable stores the model but is unused
+            # because the model is already stored in the model variable.
             _, metrics = self.train(model, train_dataset, test_dataset, verbose)
 
             self.cv_metrics.append(("LogisicRegression-split-" + str(k), metrics))
