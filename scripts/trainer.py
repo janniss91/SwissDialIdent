@@ -16,7 +16,7 @@ class Trainer:
         labels: ndarray,
         n_epochs: int = 10,
         batch_size: int = 10,
-        lr: int = 0.01,
+        lr: float = 0.01,
         log_interval: int = 50,
     ):
         self.model_type = model_type
@@ -85,12 +85,12 @@ class Trainer:
         data_set_size: int,
         loss: Tensor,
     ):
-        count = batch_id * self.batch_size
+        batch_count = batch_id * self.batch_size
 
         print(
             "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                 epoch,
-                count,
+                batch_count,
                 data_set_size,
                 100.0 * count / data_set_size,
                 loss.item(),

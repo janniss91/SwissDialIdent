@@ -43,24 +43,25 @@ class LogisticRegressionTrainer(Trainer):
                 ivector_batch = Variable(ivector_batch)
                 batch_labels = Variable(batch_labels)
 
+                # Model convergence (actual training process).
                 optimizer.zero_grad()
                 outputs = model(ivector_batch)
                 loss = criterion(outputs, batch_labels)
                 loss.backward()
                 optimizer.step()
 
+                # Store training losses.
                 if batch_id % self.log_interval == 0:
                     train_losses.append(loss.item())
-                    train_counter.append(
-                        (batch_id * self.batch_size)
-                        + ((epoch - 1) * len(train_loader.dataset))
-                    )
+                    train_counter.append((epoch, (batch_id * self.batch_size)))
 
+                    # Print training losses.
                     if verbose:
                         self.print_train_metrics(
                             epoch, batch_id, len(train_loader.dataset), loss
                         )
 
+            # Test and store test losses.
             metrics, test_loss = self.test(model, dev_dataset, verbose)
             test_losses.append(test_loss)
 

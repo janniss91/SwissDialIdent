@@ -1,11 +1,12 @@
 import csv
 import os
 from typing import Dict
-from typing import List
 
 
 class TrainLogger:
-    def __init__(self, model_type, n_epochs, batch_size, lr, log_interval):
+    def __init__(
+        self, model_type, n_epochs: int, batch_size: int, lr: float, log_interval: int
+    ):
         self.LOG_DIR = "train_logs"
         self.LOSS_LOG_DIR = "loss_logs"
         self.METRICS_FILE = "metric_logs.tsv"
@@ -111,9 +112,26 @@ class TrainLogger:
 
             metrics_writer.write(train_info)
 
-    def log_losses(self, train_time: str, metrics: List):
-        pass
+    def log_losses(self, train_time: str, metrics: Dict):
+        train_counter = metrics.train_counter
+        train_losses = metrics.train_losses
+        test_counter = metrics.test_counter
+        test_losses = metrics.test_losses
 
-    def __call__(self, train_time: str, runtime: float, metrics: Dict, losses: List):
+        loss_path = os.path.join(
+            self.LOG_DIR, self.LOSS_LOG_DIR, train_time + "-" + self.model_name
+        )
+        with open(loss_path, "w") as loss_file:
+
+            loss_file.write("train_loss")
+            for (epoch, batch_count), loss in zip(train_counter, train_losses):
+                loss_file.write(epoch, "\t", batch_count, "\t", loss)
+            loss_file.write("")
+
+            loss_file.write("test_loss")
+            for batch_count, loss in zip(test_counter, test_losses):
+                loss_file.write(batch_count, "\t", loss)
+
+    def __call__(self, train_time: str, runtime: float, metrics: Dict):
         self.log_metrics(train_time, runtime, metrics)
-        self.log_losses(train_time, runtime, losses)
+        self.log_losses(train_time, metrics)
