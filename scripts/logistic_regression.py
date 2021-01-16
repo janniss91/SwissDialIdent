@@ -58,7 +58,7 @@ class LogisticRegressionTrainer(Trainer):
 
                     if verbose:
                         self.print_train_metrics(
-                            epoch, batch_id, ivector_batch, train_loader, loss
+                            epoch, batch_id, len(train_loader.dataset), loss
                         )
 
             metrics, test_loss = self.test(model, dev_dataset, verbose)

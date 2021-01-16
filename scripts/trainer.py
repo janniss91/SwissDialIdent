@@ -77,20 +77,22 @@ class Trainer:
 
             self.cv_metrics.append(("LogisicRegression-split-" + str(k), metrics))
 
+# Todo: Test that the numbers are printed correctly!
     def print_train_metrics(
         self,
         epoch: int,
         batch_id: int,
-        ivector_batch: Tensor,
-        train_loader: DataLoader,
+        data_set_size: int,
         loss: Tensor,
     ):
+        count = batch_id * self.batch_size
+
         print(
             "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
                 epoch,
-                batch_id * len(ivector_batch),
-                len(train_loader.dataset),
-                100.0 * batch_id / len(train_loader),
+                count,
+                data_set_size,
+                100.0 * count / data_set_size,
                 loss.item(),
             )
         )
