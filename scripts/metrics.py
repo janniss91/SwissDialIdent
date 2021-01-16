@@ -21,6 +21,10 @@ class Metrics:
         metrics_dict = classification_report(
             self.true, self.pred, target_names=self.label_names, output_dict=True
         )
+        # Make sure no attribute contains spaces.
+        metrics_dict["macroavg"] = metrics_dict.pop("macro avg")
+        metrics_dict["weightedavg"] = metrics_dict.pop("weighted avg")
+
         for key in metrics_dict:
             setattr(self, key, metrics_dict[key])
 

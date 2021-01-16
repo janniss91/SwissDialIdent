@@ -35,10 +35,10 @@ class LogisticRegressionTrainer(Trainer):
         test_losses = []
         test_counter = [i * len(train_loader.dataset) for i in range(self.n_epochs + 1)]
 
-        train_time = time.strftime("%a, %d %b %Y %H:%M:%S", time.localtime())
-        start_time = time.time()
-
         for epoch in range(1, self.n_epochs + 1):
+            train_time = time.strftime("%a-%d-%b-%Y-%H:%M:%S", time.localtime())
+            start_time = time.time()
+
             for batch_id, (ivector_batch, batch_labels) in enumerate(train_loader):
                 ivector_batch = Variable(ivector_batch)
                 batch_labels = Variable(batch_labels)
@@ -63,13 +63,19 @@ class LogisticRegressionTrainer(Trainer):
 
             # Test and store test losses.
             metrics, test_loss = self.test(model, dev_dataset, verbose)
+
+            # Set up logging parameters and write metrics to logs.
+            self.logger.epoch_no = epoch
             test_losses.append(test_loss)
+            end_time = time.time()
+            runtime = round(end_time - start_time, 2)
+            self.logger.train_samples = train_dataset.n_samples
+            self.logger.test_samples = dev_dataset.n_samples
+            self.logger.log_metrics(train_time, runtime, metrics)
 
-        end_time = time.time()
-        runtime = round(end_time - start_time, 2)
-
+        # Store losses to metrics and write losses to logs.
         metrics.store_losses(train_losses, train_counter, test_losses, test_counter)
-        self.logger(train_time, runtime, metrics)
+        self.logger.log_losses(train_time, metrics)
 
         return model, metrics
 
@@ -97,6 +103,6 @@ class LogisticRegressionTrainer(Trainer):
         test_loss /= len(dev_loader.dataset)
 
         if verbose:
-            self.print_test_metrics(test_loss, correct, dev_loader, metrics)
+            self.print_test_metrics(test_loss, correct, dev_dataset.n_samples, metrics)
 
         return metrics, test_loss

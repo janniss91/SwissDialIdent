@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import KFold
 
 from dataset import SwissDialectDataset
-from logging import TrainLogger
+from train_logger import TrainLogger
 from metrics import Metrics
 
 
@@ -92,7 +92,7 @@ class Trainer:
                 epoch,
                 batch_count,
                 data_set_size,
-                100.0 * count / data_set_size,
+                100.0 * batch_count / data_set_size,
                 loss.item(),
             )
         )
@@ -101,12 +101,12 @@ class Trainer:
         self,
         test_loss: float,
         correct: Tensor,
-        dev_loader: DataLoader,
+        n_samples: int,
         metrics: Metrics,
     ):
         print(
             "\nTest set: Avg. loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-                test_loss, correct, len(dev_loader.dataset), 100.0 * metrics.accuracy
+                test_loss, correct, n_samples, 100.0 * metrics.accuracy
             )
         )
 
