@@ -2,7 +2,6 @@ from numpy import ndarray
 from torch import Tensor
 from sklearn.model_selection import KFold
 
-from dataset import SwissDialectDataset
 from train_logger import TrainLogger
 from metrics import Metrics
 
@@ -11,16 +10,12 @@ class Trainer:
     def __init__(
         self,
         model_type,  # DataType: [LogisticRegression, ...]
-        ivectors: ndarray,
-        labels: ndarray,
         n_epochs: int = 10,
         batch_size: int = 10,
         lr: float = 0.01,
         log_interval: int = 50,
     ):
         self.model_type = model_type
-        self.ivectors = ivectors
-        self.labels = labels
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.lr = lr
@@ -45,39 +40,25 @@ class Trainer:
             "The test method can only be run from a subclass of Trainer."
         )
 
-    def cross_validation(self, k: int = 10, verbose: bool = False):
+    def cross_validation(
+        self,
+        ivectors: ndarray,
+        labels: ndarray,
+        k: int = 10,
+        verbose: bool = False
+    ):
         kfold = KFold(k)
-        for k, (train_ids, test_ids) in enumerate(kfold.split(self.labels), start=1):
+        for k, (train_ids, test_ids) in enumerate(kfold.split(labels), start=1):
+
+            train_ivecs = ivectors[train_ids]
+            train_labels = labels[train_ids]
+            test_ivecs = ivectors[test_ids]
+            test_labels = labels[test_ids]
 
             if verbose:
                 print("K-Fold Cross validation: k=" + str(k))
 
-            train_ivecs = self.ivectors[train_ids]
-            train_labels = self.labels[train_ids]
-            test_ivecs = self.ivectors[test_ids]
-            test_labels = self.labels[test_ids]
-
-            # PyTorch models (up to now only LogisticRegression).
-            if self.model_type.__name__ in ("LogisticRegression"):
-                train_dataset = SwissDialectDataset(train_ivecs, train_labels)
-                test_dataset = SwissDialectDataset(test_ivecs, test_labels)
-                input_dim = train_dataset.n_features
-                output_dim = train_dataset.n_classes
-                model = self.model_type(input_dim, output_dim)
-
-                # Test the performance on the dev set with randomly initialized
-                # weights. This way it can be compared to the performance after
-                # training.
-                self.test(model, test_dataset, verbose=verbose)
-                metrics = self.train(model, train_dataset, test_dataset, verbose)
-
-            # Up to now only case for SVM.
-            else:
-                train_dataset = (train_ivecs, train_labels)
-                test_dataset = (test_ivecs, test_labels)
-                # Todo: The model might need more hyperparameters.
-                model = self.model_type(verbose=verbose)
-                metrics = self.train(model, train_dataset, test_dataset)
+            model, metrics = self.train(self.model_type, train_ivecs, train_labels, test_ivecs, test_labels, verbose)
 
             self.cv_metrics.append((self.model_type.__name__ + "-split-" + str(k), metrics))
 

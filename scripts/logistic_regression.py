@@ -1,5 +1,6 @@
 import time
 import torch
+from numpy import ndarray
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 
@@ -20,18 +21,28 @@ class LogisticRegression(torch.nn.Module):
 class LogisticRegressionTrainer(Trainer):
     def train(
         self,
-        model: LogisticRegression,
-        train_dataset: SwissDialectDataset,
-        test_dataset: SwissDialectDataset,
+        model_type: LogisticRegression,
+        train_ivecs: ndarray,
+        train_labels: ndarray, 
+        test_ivecs: ndarray,
+        test_labels: ndarray,
         verbose: bool,
     ):
+        # Set up PyTorch compatible datasets and dataloader.
+        train_dataset = SwissDialectDataset(train_ivecs, train_labels)
+        test_dataset = SwissDialectDataset(test_ivecs, test_labels)
         train_loader = DataLoader(dataset=train_dataset, batch_size=self.batch_size)
+
+        # Initialize and prepare model for training.
+        input_dim = train_dataset.n_features
+        output_dim = train_dataset.n_classes
+        model = self.model_type(input_dim, output_dim)
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
 
         self.logger.train_samples = train_dataset.n_samples
         self.logger.test_samples = test_dataset.n_samples
-
+        
         train_losses = []
         train_counter = []
         test_losses = []
@@ -41,7 +52,6 @@ class LogisticRegressionTrainer(Trainer):
             # Track date, time and training time.
             train_time = time.strftime("%a-%d-%b-%Y-%H:%M:%S", time.localtime())
             start_time = time.time()
-
             for batch_id, (ivector_batch, batch_labels) in enumerate(train_loader):
                 ivector_batch = Variable(ivector_batch)
                 batch_labels = Variable(batch_labels)
@@ -81,7 +91,6 @@ class LogisticRegressionTrainer(Trainer):
     def test(
         self, model: LogisticRegression, test_dataset: SwissDialectDataset, verbose: bool
     ):
-
         test_loader = DataLoader(dataset=test_dataset, batch_size=self.batch_size)
         criterion = torch.nn.CrossEntropyLoss()
 
