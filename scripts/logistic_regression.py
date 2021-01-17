@@ -1,5 +1,6 @@
 import time
 import torch
+from numpy import ndarray
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 
@@ -20,18 +21,28 @@ class LogisticRegression(torch.nn.Module):
 class LogisticRegressionTrainer(Trainer):
     def train(
         self,
-        model: LogisticRegression,
-        train_dataset: SwissDialectDataset,
-        dev_dataset: SwissDialectDataset,
+        model_type: LogisticRegression,
+        train_ivecs: ndarray,
+        train_labels: ndarray, 
+        test_ivecs: ndarray,
+        test_labels: ndarray,
         verbose: bool,
     ):
+        # Set up PyTorch compatible datasets and dataloader.
+        train_dataset = SwissDialectDataset(train_ivecs, train_labels)
+        test_dataset = SwissDialectDataset(test_ivecs, test_labels)
         train_loader = DataLoader(dataset=train_dataset, batch_size=self.batch_size)
+
+        # Initialize and prepare model for training.
+        input_dim = train_dataset.n_features
+        output_dim = train_dataset.n_classes
+        model = self.model_type(input_dim, output_dim)
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
 
         self.logger.train_samples = train_dataset.n_samples
-        self.logger.test_samples = dev_dataset.n_samples
-
+        self.logger.test_samples = test_dataset.n_samples
+        
         train_losses = []
         train_counter = []
         test_losses = []
@@ -41,7 +52,6 @@ class LogisticRegressionTrainer(Trainer):
             # Track date, time and training time.
             train_time = time.strftime("%a-%d-%b-%Y-%H:%M:%S", time.localtime())
             start_time = time.time()
-
             for batch_id, (ivector_batch, batch_labels) in enumerate(train_loader):
                 ivector_batch = Variable(ivector_batch)
                 batch_labels = Variable(batch_labels)
@@ -63,7 +73,7 @@ class LogisticRegressionTrainer(Trainer):
                         )
 
             # Test and store test losses.
-            metrics, test_loss = self.test(model, dev_dataset, verbose)
+            metrics, test_loss = self.test(model, test_dataset, verbose)
             test_losses.append(test_loss)
 
             # Set up logging parameters and write metrics to logs.
@@ -79,17 +89,16 @@ class LogisticRegressionTrainer(Trainer):
         return model, metrics
 
     def test(
-        self, model: LogisticRegression, dev_dataset: SwissDialectDataset, verbose: bool
+        self, model: LogisticRegression, test_dataset: SwissDialectDataset, verbose: bool
     ):
-
-        dev_loader = DataLoader(dataset=dev_dataset, batch_size=self.batch_size)
+        test_loader = DataLoader(dataset=test_dataset, batch_size=self.batch_size)
         criterion = torch.nn.CrossEntropyLoss()
 
         test_loss = 0
         correct = 0
         all_preds = torch.empty(0)
         with torch.no_grad():
-            for ivector_batch, batch_labels in dev_loader:
+            for ivector_batch, batch_labels in test_loader:
                 output = model(ivector_batch)
                 test_loss += criterion(output, batch_labels).item()
                 pred = output.data.max(1, keepdim=True)[1]
@@ -97,11 +106,11 @@ class LogisticRegressionTrainer(Trainer):
                 all_preds = torch.cat((all_preds, torch.flatten(pred)))
 
         # The metrics object requires numpy arrays instead of torch tensors.
-        metrics = Metrics(dev_dataset.labels.numpy(), all_preds.numpy())
+        metrics = Metrics(test_dataset.labels.numpy(), all_preds.numpy())
 
-        test_loss /= len(dev_loader.dataset)
+        test_loss /= len(test_loader.dataset)
 
         if verbose:
-            self.print_test_metrics(test_loss, correct, dev_dataset.n_samples, metrics)
+            self.print_test_metrics(test_loss, correct, test_dataset.n_samples, metrics)
 
         return metrics, test_loss
