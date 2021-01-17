@@ -22,7 +22,7 @@ class LogisticRegressionTrainer(Trainer):
         self,
         model: LogisticRegression,
         train_dataset: SwissDialectDataset,
-        dev_dataset: SwissDialectDataset,
+        test_dataset: SwissDialectDataset,
         verbose: bool,
     ):
         train_loader = DataLoader(dataset=train_dataset, batch_size=self.batch_size)
@@ -30,7 +30,7 @@ class LogisticRegressionTrainer(Trainer):
         optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
 
         self.logger.train_samples = train_dataset.n_samples
-        self.logger.test_samples = dev_dataset.n_samples
+        self.logger.test_samples = test_dataset.n_samples
 
         train_losses = []
         train_counter = []
@@ -59,11 +59,11 @@ class LogisticRegressionTrainer(Trainer):
                     # Print training losses.
                     if verbose:
                         self.print_train_metrics(
-                            epoch, batch_id, len(train_loader.dataset), loss
+                            epoch, batch_id, train_dataset.n_samples, loss
                         )
 
             # Test and store test losses.
-            metrics, test_loss = self.test(model, dev_dataset, verbose)
+            metrics, test_loss = self.test(model, test_dataset, verbose)
             test_losses.append(test_loss)
 
             # Set up logging parameters and write metrics to logs.
@@ -76,20 +76,20 @@ class LogisticRegressionTrainer(Trainer):
         metrics.store_losses(train_losses, train_counter, test_losses, test_counter)
         self.logger.log_losses(train_time, metrics)
 
-        return model, metrics
+        return metrics
 
     def test(
-        self, model: LogisticRegression, dev_dataset: SwissDialectDataset, verbose: bool
+        self, model: LogisticRegression, test_dataset: SwissDialectDataset, verbose: bool
     ):
 
-        dev_loader = DataLoader(dataset=dev_dataset, batch_size=self.batch_size)
+        test_loader = DataLoader(dataset=test_dataset, batch_size=self.batch_size)
         criterion = torch.nn.CrossEntropyLoss()
 
         test_loss = 0
         correct = 0
         all_preds = torch.empty(0)
         with torch.no_grad():
-            for ivector_batch, batch_labels in dev_loader:
+            for ivector_batch, batch_labels in test_loader:
                 output = model(ivector_batch)
                 test_loss += criterion(output, batch_labels).item()
                 pred = output.data.max(1, keepdim=True)[1]
@@ -97,11 +97,11 @@ class LogisticRegressionTrainer(Trainer):
                 all_preds = torch.cat((all_preds, torch.flatten(pred)))
 
         # The metrics object requires numpy arrays instead of torch tensors.
-        metrics = Metrics(dev_dataset.labels.numpy(), all_preds.numpy())
+        metrics = Metrics(test_dataset.labels.numpy(), all_preds.numpy())
 
-        test_loss /= len(dev_loader.dataset)
+        test_loss /= test_dataset.n_samples
 
         if verbose:
-            self.print_test_metrics(test_loss, correct, dev_dataset.n_samples, metrics)
+            self.print_test_metrics(test_loss, correct, test_dataset.n_samples, metrics)
 
         return metrics, test_loss
