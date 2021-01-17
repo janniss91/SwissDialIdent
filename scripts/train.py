@@ -1,3 +1,4 @@
+from sklearn.svm import SVC
 from typing import List
 from typing import Tuple
 
@@ -5,6 +6,7 @@ from dataset import combine_data
 from logistic_regression import LogisticRegression
 from logistic_regression import LogisticRegressionTrainer
 from metrics import Metrics
+from svm import SVMTrainer
 
 
 def select_model(
@@ -21,8 +23,8 @@ def select_model(
 ):
 
     metrics_all_models = []
-    model_types = [LogisticRegression]
-    trainer_types = [LogisticRegressionTrainer]
+    model_types = [LogisticRegression, SVC]
+    trainer_types = [LogisticRegressionTrainer, SVMTrainer]
 
     for model_type, trainer_type in zip(model_types, trainer_types):
         trainer = trainer_type(
