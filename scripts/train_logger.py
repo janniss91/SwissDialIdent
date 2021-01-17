@@ -11,7 +11,7 @@ class TrainLogger:
         self.LOSS_LOG_DIR = "loss_logs"
         self.METRICS_FILE = "metric_logs.tsv"
 
-        self.METRICS_HEADER = [
+        self.METRICS_HEADER = (
             "id",
             "datetime",
             "model_type",
@@ -48,20 +48,19 @@ class TrainLogger:
             "weighted-avg-recall",
             "weighted-avg-f1",
             "weighted-avg-support",
-            # ...
             # The "comments" section is not filled automatically but can be
             # used to manually comment on peculiarities about the training run.
             "comments",
-        ]
+        )
 
-        self.model_type = model_type    
+        self.model_type = model_type
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.lr = lr
         self.log_interval = log_interval
 
-        # The variable epoch_no will only get a value in training runs.
-        self.epoch_no = ""
+        # The variable epoch_no will only get an integer value in training runs.
+        self.epoch_no = "-"
         self.train_samples = 0
         self.test_samples = 0
         self.model_name = self.model_type.__name__
@@ -69,7 +68,7 @@ class TrainLogger:
     def log_metrics(self, train_time: str, runtime: float, metrics: Dict):
 
         metrics_path = os.path.join(self.LOG_DIR, self.METRICS_FILE)
-        
+
         with open(metrics_path, "r") as metrics_file:
             # Choose the ID for the training run.
             id_reader = csv.reader(metrics_file, delimiter="\t")
@@ -155,7 +154,3 @@ class TrainLogger:
             loss_writer.writerow(("test_loss"))
             for batch_count, loss in zip(test_counter, test_losses):
                 loss_writer.writerow((batch_count, loss))
-
-    def __call__(self, train_time: str, runtime: float, metrics: Dict):
-        self.log_metrics(train_time, runtime, metrics)
-        self.log_losses(train_time, metrics)

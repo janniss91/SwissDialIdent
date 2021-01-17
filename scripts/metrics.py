@@ -38,6 +38,3 @@ class Metrics:
         print(
             classification_report(self.true, self.pred, target_names=self.label_names)
         )
-
-    def write_to_file(self):
-        pass

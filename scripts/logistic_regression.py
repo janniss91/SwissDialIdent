@@ -25,10 +25,12 @@ class LogisticRegressionTrainer(Trainer):
         dev_dataset: SwissDialectDataset,
         verbose: bool,
     ):
-
         train_loader = DataLoader(dataset=train_dataset, batch_size=self.batch_size)
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
+
+        self.logger.train_samples = train_dataset.n_samples
+        self.logger.test_samples = dev_dataset.n_samples
 
         train_losses = []
         train_counter = []
@@ -36,14 +38,13 @@ class LogisticRegressionTrainer(Trainer):
         test_counter = [i * len(train_loader.dataset) for i in range(self.n_epochs + 1)]
 
         for epoch in range(1, self.n_epochs + 1):
+            # Track date, time and training time.
             train_time = time.strftime("%a-%d-%b-%Y-%H:%M:%S", time.localtime())
             start_time = time.time()
 
             for batch_id, (ivector_batch, batch_labels) in enumerate(train_loader):
                 ivector_batch = Variable(ivector_batch)
                 batch_labels = Variable(batch_labels)
-
-                # Model convergence (actual training process).
                 optimizer.zero_grad()
                 outputs = model(ivector_batch)
                 loss = criterion(outputs, batch_labels)
@@ -63,14 +64,12 @@ class LogisticRegressionTrainer(Trainer):
 
             # Test and store test losses.
             metrics, test_loss = self.test(model, dev_dataset, verbose)
+            test_losses.append(test_loss)
 
             # Set up logging parameters and write metrics to logs.
             self.logger.epoch_no = epoch
-            test_losses.append(test_loss)
             end_time = time.time()
             runtime = round(end_time - start_time, 2)
-            self.logger.train_samples = train_dataset.n_samples
-            self.logger.test_samples = dev_dataset.n_samples
             self.logger.log_metrics(train_time, runtime, metrics)
 
         # Store losses to metrics and write losses to logs.
