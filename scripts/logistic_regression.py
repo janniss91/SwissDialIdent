@@ -7,6 +7,7 @@ from torch.autograd import Variable
 from dataset import SwissDialectDataset
 from metrics import Metrics
 from trainer import Trainer
+from train_logger import TrainLogger
 
 
 class LogisticRegression(torch.nn.Module):
@@ -19,11 +20,30 @@ class LogisticRegression(torch.nn.Module):
 
 
 class LogisticRegressionTrainer(Trainer):
+    def __init__(
+        self,
+        n_epochs: int = 10,
+        batch_size: int = 10,
+        lr: float = 0.01,
+        log_interval: int = 50,
+    ):
+        self.n_epochs = n_epochs
+        self.batch_size = batch_size
+        self.lr = lr
+        self.log_interval = log_interval
+
+        self.logger = TrainLogger()
+        for attribute in self.__dict__:
+            setattr(self.logger, attribute, self.__dict__[attribute])
+
+        # It is important that the super initialization happens after
+        # setting the trainlogger attributes.
+        super(LogisticRegressionTrainer, self).__init__()
+
     def train(
         self,
-        model_type: LogisticRegression,
         train_ivecs: ndarray,
-        train_labels: ndarray, 
+        train_labels: ndarray,
         test_ivecs: ndarray,
         test_labels: ndarray,
         verbose: bool,
@@ -36,12 +56,13 @@ class LogisticRegressionTrainer(Trainer):
         # Initialize and prepare model for training.
         input_dim = train_dataset.n_features
         output_dim = train_dataset.n_classes
-        model = self.model_type(input_dim, output_dim)
+        model = LogisticRegression(input_dim, output_dim)
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
 
         self.logger.train_samples = train_dataset.n_samples
         self.logger.test_samples = test_dataset.n_samples
+        self.logger.model_name = model.__class__.__name__
         
         train_losses = []
         train_counter = []

@@ -2,33 +2,14 @@ from numpy import ndarray
 from torch import Tensor
 from sklearn.model_selection import KFold
 
-from train_logger import TrainLogger
 from metrics import Metrics
 
 
 class Trainer:
     def __init__(
         self,
-        model_type,  # DataType: [LogisticRegression, ...]
-        n_epochs: int = 10,
-        batch_size: int = 10,
-        lr: float = 0.01,
-        log_interval: int = 50,
     ):
-        self.model_type = model_type
-        self.n_epochs = n_epochs
-        self.batch_size = batch_size
-        self.lr = lr
-        self.log_interval = log_interval
-
         self.cv_metrics = []
-        self.logger = TrainLogger(
-            self.model_type,
-            self.n_epochs,
-            self.batch_size,
-            self.lr,
-            self.log_interval,
-        )
 
     def train(self):
         raise NotImplementedError(
@@ -58,9 +39,9 @@ class Trainer:
             if verbose:
                 print("K-Fold Cross validation: k=" + str(k))
 
-            model, metrics = self.train(self.model_type, train_ivecs, train_labels, test_ivecs, test_labels, verbose)
+            model, metrics = self.train(train_ivecs, train_labels, test_ivecs, test_labels, verbose)
 
-            self.cv_metrics.append((self.model_type.__name__ + "-split-" + str(k), metrics))
+            self.cv_metrics.append((self.model.__class__.__name__ + "-split-" + str(k), metrics))
 
 # Todo: Test that the numbers are printed correctly!
     def print_train_metrics(

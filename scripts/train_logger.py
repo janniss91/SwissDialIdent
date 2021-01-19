@@ -4,9 +4,9 @@ from typing import Dict
 
 
 class TrainLogger:
-    def __init__(
-        self, model_type, n_epochs: int, batch_size: int, lr: float, log_interval: int
-    ):
+    def __init__(self):
+
+        # Output directories.
         self.LOG_DIR = "train_logs"
         self.LOSS_LOG_DIR = "loss_logs"
         self.METRICS_FILE = "metric_logs.tsv"
@@ -14,15 +14,19 @@ class TrainLogger:
         self.METRICS_HEADER = (
             "id",
             "datetime",
+            "runtime",
             "model_type",
             "n_samples",
             "train_samples",
             "test_samples",
-            "runtime",
             "epoch_no",
             "n_epochs",
             "batch_size",
             "lr",
+            "c"
+            "kernel"
+            "degree"
+            "max_iter"
             "LU-precision",
             "LU-recall",
             "LU-f1",
@@ -53,17 +57,23 @@ class TrainLogger:
             "comments",
         )
 
-        self.model_type = model_type
-        self.n_epochs = n_epochs
-        self.batch_size = batch_size
-        self.lr = lr
-        self.log_interval = log_interval
+        self.model_type = "-"
 
-        # The variable epoch_no will only get an integer value in training runs.
+        # Parameters for PyTorch models.
+        self.n_epochs = "-"
+        self.batch_size = "-"
+        self.lr = "-"
+        self.log_interval = "-"
         self.epoch_no = "-"
-        self.train_samples = 0
-        self.test_samples = 0
-        self.model_name = self.model_type.__name__
+
+        # Parameters for Support Vector Machine.
+        self.c = "-"
+        self.kernel = "-"
+        self.degree = "-"
+        self.max_iter = "-"
+
+        self.train_samples = "-"
+        self.test_samples = "-"
 
     def log_metrics(self, train_time: str, runtime: float, metrics: Dict):
 
@@ -86,15 +96,19 @@ class TrainLogger:
             train_info = [
                 next_id,
                 train_time,
+                str(runtime) + " sec",
                 self.model_name,
                 self.train_samples + self.test_samples,
                 self.train_samples,
                 self.test_samples,
-                str(runtime) + " sec",
                 self.epoch_no,
                 self.n_epochs,
                 self.batch_size,
                 self.lr,
+                self.c,
+                self.kernel,
+                self.degree,
+                self.max_iter,
             ]
 
             # Round all metrics to 3 digits before adding them.
