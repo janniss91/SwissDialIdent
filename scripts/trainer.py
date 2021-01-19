@@ -22,11 +22,7 @@ class Trainer:
         )
 
     def cross_validation(
-        self,
-        ivectors: ndarray,
-        labels: ndarray,
-        k: int = 10,
-        verbose: bool = False
+        self, ivectors: ndarray, labels: ndarray, k: int = 10, verbose: bool = False
     ):
         kfold = KFold(k)
         for k, (train_ids, test_ids) in enumerate(kfold.split(labels), start=1):
@@ -39,11 +35,15 @@ class Trainer:
             if verbose:
                 print("K-Fold Cross validation: k=" + str(k))
 
-            model, metrics = self.train(train_ivecs, train_labels, test_ivecs, test_labels, verbose)
+            model, metrics = self.train(
+                train_ivecs, train_labels, test_ivecs, test_labels, verbose
+            )
 
-            self.cv_metrics.append((self.model.__class__.__name__ + "-split-" + str(k), metrics))
+            self.cv_metrics.append(
+                (self.model.__class__.__name__ + "-split-" + str(k), metrics)
+            )
 
-# Todo: Test that the numbers are printed correctly!
+    # Todo: Test that the numbers are printed correctly!
     def print_train_metrics(
         self,
         epoch: int,

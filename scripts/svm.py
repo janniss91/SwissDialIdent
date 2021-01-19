@@ -27,7 +27,7 @@ class SVMTrainer(Trainer):
         self,
         train_dataset: Tuple[ndarray, ndarray],
         test_dataset: Tuple[ndarray, ndarray],
-        verbose: bool = False
+        verbose: bool = False,
     ):
 
         train_ivectors = train_dataset[0]
@@ -40,7 +40,13 @@ class SVMTrainer(Trainer):
         train_time = time.strftime("%a-%d-%b-%Y-%H:%M:%S", time.localtime())
         start_time = time.time()
 
-        model = SVC(C=self.c, kernel=self.kernel, degree=self.degree, max_iter=self.max_iter, verbose=verbose)
+        model = SVC(
+            C=self.c,
+            kernel=self.kernel,
+            degree=self.degree,
+            max_iter=self.max_iter,
+            verbose=verbose,
+        )
 
         self.logger.model_name = model.__class__.__name__
 
@@ -55,9 +61,7 @@ class SVMTrainer(Trainer):
 
         return metrics
 
-    def test(
-        self, model: SVC, test_dataset: Tuple[ndarray, ndarray]
-    ):
+    def test(self, model: SVC, test_dataset: Tuple[ndarray, ndarray]):
         test_ivectors = test_dataset[0]
         test_labels = test_dataset[1]
 

@@ -28,7 +28,13 @@ class Metrics:
         for key in metrics_dict:
             setattr(self, key, metrics_dict[key])
 
-    def store_losses(self, train_losses: List[float], train_counter: List[int], test_losses: List[float], test_counter: List[int]):
+    def store_losses(
+        self,
+        train_losses: List[float],
+        train_counter: List[int],
+        test_losses: List[float],
+        test_counter: List[int],
+    ):
         self.train_losses = train_losses
         self.train_counter = train_counter
         self.test_losses = test_losses

@@ -23,11 +23,7 @@ class TrainLogger:
             "n_epochs",
             "batch_size",
             "lr",
-            "c"
-            "kernel"
-            "degree"
-            "max_iter"
-            "LU-precision",
+            "c" "kernel" "degree" "max_iter" "LU-precision",
             "LU-recall",
             "LU-f1",
             "LU-support",

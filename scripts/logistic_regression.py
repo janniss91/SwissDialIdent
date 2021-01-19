@@ -44,9 +44,9 @@ class LogisticRegressionTrainer(Trainer):
         self,
         train_ivecs: ndarray,
         train_labels: ndarray,
-        test_ivecs: ndarray,
-        test_labels: ndarray,
-        verbose: bool,
+        test_ivecs: ndarray = None,
+        test_labels: ndarray = None,
+        verbose: bool = False,
     ):
         # Set up PyTorch compatible datasets and dataloader.
         train_dataset = SwissDialectDataset(train_ivecs, train_labels)
@@ -63,7 +63,7 @@ class LogisticRegressionTrainer(Trainer):
         self.logger.train_samples = train_dataset.n_samples
         self.logger.test_samples = test_dataset.n_samples
         self.logger.model_name = model.__class__.__name__
-        
+
         train_losses = []
         train_counter = []
         test_losses = []
@@ -101,16 +101,20 @@ class LogisticRegressionTrainer(Trainer):
             self.logger.epoch_no = epoch
             end_time = time.time()
             runtime = round(end_time - start_time, 2)
+
             self.logger.log_metrics(train_time, runtime, metrics)
 
         # Store losses to metrics and write losses to logs.
         metrics.store_losses(train_losses, train_counter, test_losses, test_counter)
         self.logger.log_losses(train_time, metrics)
 
-        return metrics
+        return model, metrics
 
     def test(
-        self, model: LogisticRegression, test_dataset: SwissDialectDataset, verbose: bool
+        self,
+        model: LogisticRegression,
+        test_dataset: SwissDialectDataset,
+        verbose: bool,
     ):
         test_loader = DataLoader(dataset=test_dataset, batch_size=self.batch_size)
         criterion = torch.nn.CrossEntropyLoss()
@@ -135,3 +139,32 @@ class LogisticRegressionTrainer(Trainer):
             self.print_test_metrics(test_loss, correct, test_dataset.n_samples, metrics)
 
         return metrics, test_loss
+
+    def train_final_model(self, ivectors: ndarray, labels: ndarray, verbose: bool = True):
+
+        dataset = SwissDialectDataset(ivectors, labels)
+        data_loader = DataLoader(dataset=dataset, batch_size=self.batch_size)
+
+        input_dim = dataset.n_features
+        output_dim = dataset.n_classes
+        model = LogisticRegression(input_dim, output_dim)
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
+
+        for epoch in range(1, self.n_epochs + 1):
+            for batch_id, (ivector_batch, batch_labels) in enumerate(data_loader):
+                ivector_batch = Variable(ivector_batch)
+                batch_labels = Variable(batch_labels)
+                optimizer.zero_grad()
+                outputs = model(ivector_batch)
+                loss = criterion(outputs, batch_labels)
+                loss.backward()
+                optimizer.step()
+    
+                # Print training losses.
+                if verbose:
+                    self.print_train_metrics(
+                        epoch, batch_id, dataset.n_samples, loss
+                    )
+
+        return model
