@@ -1,5 +1,6 @@
 import argparse
-from sklearn import ndarray
+import time
+from numpy import ndarray
 from sklearn.svm import SVC
 from typing import Dict
 from typing import List
@@ -32,11 +33,11 @@ def select_model(
     params: Dict,
     k: int = 10,
     verbose: bool = False,
-):
+) -> Union[LogisticRegression, SVC]:
 
     metrics_all_models = []
 
-    for model_name, (model_type, trainer_type) in MODEL_CHOICE.values():
+    for model_name, (model_type, trainer_type) in MODEL_CHOICE.items():
         model_params = {key: params[key] for key in PARAM_CHOICE[model_name]}
         trainer = trainer_type(**model_params)
         trainer.cross_validation(all_ivectors, all_labels, k=k, verbose=True)
@@ -48,7 +49,7 @@ def select_model(
 
 
 def compare_metrics(metrics_all_models: List[List[Tuple[str, Metrics]]]):
-    # Todo: Put the metrics of all CVs from all models in here and
+    # Todo: Put the metrics of all CVs from all models in here and compare.
     pass
 
 
@@ -61,17 +62,17 @@ def train_single_model(
     params: Dict,
     verbose: bool = False,
 ) -> Union[LogisticRegression, SVC]:
+
     trainer_type = MODEL_CHOICE[model_name][1]
     model_params = {key: params[key] for key in PARAM_CHOICE[model_name]}
     trainer = trainer_type(**model_params)
 
     model = trainer.train(
-        model_name,
         train_ivectors,
         train_labels,
         test_ivectors,
         test_labels,
-        verbose=True,
+        verbose=verbose,
     )
 
     return model
@@ -84,8 +85,7 @@ def train_final_model(
     params: Dict,
     verbose: bool = False,
 ) -> Union[LogisticRegression, SVC]:
-    # TODO: In the train fuctions (e.g. in LogisticRegressionTrainer) I must
-    # change the behaviour so that testing is optional.
+
     trainer_type = MODEL_CHOICE[model_name][1]
     model_params = {key: params[key] for key in PARAM_CHOICE[model_name]}
     trainer = trainer_type(**model_params)
@@ -93,7 +93,7 @@ def train_final_model(
     final_model = trainer.train_final_model(
         ivectors,
         labels,
-        verbose=True,
+        verbose=verbose,
     )
 
     return final_model
@@ -121,8 +121,8 @@ if __name__ == "__main__":
         choices=["LogisticRegression", "SVM"],
         help="Train a single model with the entire dataset",
     )
-    # parser.add_argument("-k", "--keep_model", action="store_true", help="Store the chosen model in a file.")
-    # parser.add_argument("-v", "--verbose" help="Print training and testing metrics.")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Print training and testing metrics.")
+    parser.add_argument("-k", "--keep_model", action="store_true", help="Store the chosen model in a file.")
 
     # If cross validation is run, the original split cannot be used (hence
     # the mututally exclusive group).
@@ -178,6 +178,7 @@ if __name__ == "__main__":
                 train_labels,
                 test_ivectors,
                 test_labels,
+                params,
                 verbose=args.verbose
             )
         else:
@@ -196,7 +197,7 @@ if __name__ == "__main__":
                 # TODO: Make parameters configurable.
                 all_ivectors,
                 all_labels,
-                n_epochs=3,
+                params,
                 k=3,
                 verbose=args.verbose,
             )
@@ -218,9 +219,10 @@ if __name__ == "__main__":
             )
 
     # Store all models that have been set up if desired.
+    train_time = time.strftime("%a-%d-%b-%Y", time.localtime())
     if args.keep_model:
         for m in (model, best_model, final_model):
             if m:
                 # TODO: Determine how to call the filename.
-                filename = "clear_model_name"
+                filename = train_time + model.__class__.__name__
                 save_model(m, filename)

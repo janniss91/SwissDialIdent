@@ -40,7 +40,7 @@ class Trainer:
             )
 
             self.cv_metrics.append(
-                (self.model.__class__.__name__ + "-split-" + str(k), metrics)
+                (model.__class__.__name__ + "-split-" + str(k), metrics)
             )
 
     # Todo: Test that the numbers are printed correctly!

@@ -160,7 +160,7 @@ class LogisticRegressionTrainer(Trainer):
                 loss = criterion(outputs, batch_labels)
                 loss.backward()
                 optimizer.step()
-    
+
                 # Print training losses.
                 if verbose:
                     self.print_train_metrics(
