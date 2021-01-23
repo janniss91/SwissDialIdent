@@ -1,5 +1,4 @@
 import time
-import numpy as np
 from numpy import ndarray
 from sklearn.svm import SVC
 
@@ -35,7 +34,7 @@ class SVMTrainer(Trainer):
         self.logger.train_samples = train_labels.shape[0]
         self.logger.test_samples = test_labels.shape[0]
 
-        train_time = time.strftime("%a-%d-%b-%Y-%H:%M:%S", time.localtime())
+        train_time = time.strftime("%d-%b-%Y-%H:%M:%S", time.localtime())
         start_time = time.time()
 
         verbose = 1 if verbose is True else 0
@@ -64,3 +63,10 @@ class SVMTrainer(Trainer):
         metrics = Metrics(test_labels, predictions)
 
         return metrics
+
+    def train_final_model(self, ivectors: ndarray, labels: ndarray, verbose: bool = True):
+        """
+        This method will only have to be implemented if the actual test data 
+        can be used.
+        """
+        pass

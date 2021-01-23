@@ -10,6 +10,7 @@ class Trainer:
         self,
     ):
         self.cv_metrics = []
+        self.cv_models = []
 
     def train(self):
         raise NotImplementedError(
@@ -39,6 +40,7 @@ class Trainer:
                 train_ivecs, train_labels, test_ivecs, test_labels, verbose
             )
 
+            self.cv_models.append(model)
             self.cv_metrics.append(
                 (model.__class__.__name__ + "-split-" + str(k), metrics)
             )

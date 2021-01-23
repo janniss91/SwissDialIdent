@@ -1,4 +1,6 @@
 import argparse
+import os
+import pickle
 import time
 from numpy import ndarray
 from sklearn.svm import SVC
@@ -15,6 +17,7 @@ from logistic_regression import LogisticRegressionTrainer
 from metrics import Metrics
 from svm import SVMTrainer
 
+STORED_MODEL_DIR = "stored_models"
 
 MODEL_CHOICE = {
     "LogisticRegression": (LogisticRegression, LogisticRegressionTrainer),
@@ -48,7 +51,10 @@ def select_model(
     return best_model
 
 
-def compare_metrics(metrics_all_models: List[List[Tuple[str, Metrics]]]):
+def compare_metrics(
+    all_models: List[Union[LogisticRegression, SVC]],
+    metrics_all_models: List[List[Tuple[str, Metrics]]],
+):
     # Todo: Put the metrics of all CVs from all models in here and compare.
     pass
 
@@ -67,7 +73,7 @@ def train_single_model(
     model_params = {key: params[key] for key in PARAM_CHOICE[model_name]}
     trainer = trainer_type(**model_params)
 
-    model = trainer.train(
+    model, metrics = trainer.train(
         train_ivectors,
         train_labels,
         test_ivectors,
@@ -99,11 +105,6 @@ def train_final_model(
     return final_model
 
 
-def save_model(filename: str):
-    # TODO: Use pickle to store models in a file.
-    pass
-
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -121,8 +122,18 @@ if __name__ == "__main__":
         choices=["LogisticRegression", "SVM"],
         help="Train a single model with the entire dataset",
     )
-    parser.add_argument("-v", "--verbose", action="store_true", help="Print training and testing metrics.")
-    parser.add_argument("-k", "--keep_model", action="store_true", help="Store the chosen model in a file.")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Print training and testing metrics.",
+    )
+    parser.add_argument(
+        "-k",
+        "--keep_model",
+        action="store_true",
+        help="Store the chosen model in a file.",
+    )
 
     # If cross validation is run, the original split cannot be used (hence
     # the mututally exclusive group).
@@ -179,7 +190,7 @@ if __name__ == "__main__":
                 test_ivectors,
                 test_labels,
                 params,
-                verbose=args.verbose
+                verbose=args.verbose,
             )
         else:
             print(
@@ -205,7 +216,7 @@ if __name__ == "__main__":
         if args.single_model:
 
             # TODO: Introduce train_test_split functionality (set parameter somewhere).
-            model = train_single_model(
+            model, metrics = train_single_model(
                 args.single_model,
             )
 
@@ -219,10 +230,20 @@ if __name__ == "__main__":
             )
 
     # Store all models that have been set up if desired.
-    train_time = time.strftime("%a-%d-%b-%Y", time.localtime())
-    if args.keep_model:
-        for m in (model, best_model, final_model):
-            if m:
+    store_time = time.strftime("%d-%b-%Y-%H:%M:%S", time.localtime())
+    for denom, m in (("", model), ("best", best_model), ("final", final_model)):
+        if m:
+            model_name = m.__class__.__name__
+            store = input(
+                "\n\nDo you want to store the {} model ({}) [yes|no]: ".format(
+                    denom, model_name
+                )
+            )
+
+            if store == "yes":
                 # TODO: Determine how to call the filename.
-                filename = train_time + model.__class__.__name__
-                save_model(m, filename)
+                filename = store_time + "-" + model_name + ".sav"
+                print(filename)
+
+                path_to_store = os.path.join(STORED_MODEL_DIR, filename)
+                pickle.dump(m, open(path_to_store, 'wb'))

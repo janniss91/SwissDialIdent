@@ -71,7 +71,7 @@ class LogisticRegressionTrainer(Trainer):
 
         for epoch in range(1, self.n_epochs + 1):
             # Track date, time and training time.
-            train_time = time.strftime("%a-%d-%b-%Y-%H:%M:%S", time.localtime())
+            train_time = time.strftime("%d-%b-%Y-%H:%M:%S", time.localtime())
             start_time = time.time()
             for batch_id, (ivector_batch, batch_labels) in enumerate(train_loader):
                 ivector_batch = Variable(ivector_batch)
