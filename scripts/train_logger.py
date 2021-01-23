@@ -5,6 +5,10 @@ from typing import Dict
 
 class TrainLogger:
     def __init__(self):
+        """
+        A logging object that writes all important information that comes
+        up during training runs to a file.
+        """
 
         # Output directories.
         self.LOG_DIR = "train_logs"
@@ -75,6 +79,13 @@ class TrainLogger:
         self.test_samples = "-"
 
     def log_metrics(self, train_time: str, runtime: float, metrics: Dict):
+        """
+        All metrics are written to a log file that stores all important information.
+
+        :param train_time: the current time at the start of the training phase
+        :param runtime: the time a training took
+        :param metrics: a Metrics object that holds the information for logging
+        """
 
         metrics_path = os.path.join(self.LOG_DIR, self.METRICS_FILE)
 
@@ -148,6 +159,13 @@ class TrainLogger:
             metrics_writer.writerow(train_info)
 
     def log_losses(self, train_time: str, metrics: Dict):
+        """
+        All losses are written to a file that is created specifically
+        for this training run.
+
+        :param train_time: the current time at the start of the training phase
+        :param metrics: a Metrics object that holds the loss values for logging
+        """
         train_counter = metrics.train_counter
         train_losses = metrics.train_losses
         test_counter = metrics.test_counter
