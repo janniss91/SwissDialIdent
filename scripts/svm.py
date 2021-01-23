@@ -9,7 +9,22 @@ from train_logger import TrainLogger
 
 class SVMTrainer(Trainer):
     def __init__(self, c=1.0, kernel="rbf", degree=3, max_iter=-1):
+        """
+        Inherits from Trainer class.
+        This class handles the training and test processes of the SVM
+        model.
+
+        :param c: the penalty for all misclassified data samples in the model;
+        the penalty for a datapoint is proportional to the distance of the
+        point to the decision boundary
+        :param kernel: function to transform the data in the desired way
+        :param degree: Degree of the polynomial kernel function (‘poly’);
+        ignored by all other kernel functions
+        :param max_iter: limit of iterations; no limit if it is -1
+        """
         self.c = 1.0
+        # TODO: Include gamma as parameter. High gamma: more likely to overfit
+        # gamma only applicable to non-linear kernels
         self.kernel = kernel
         self.degree = degree
         self.max_iter = max_iter
@@ -30,7 +45,17 @@ class SVMTrainer(Trainer):
         test_labels: ndarray = None,
         verbose: bool = False,
     ):
+        """
+        Train the SVM model.
+        The test run is embedded here.
 
+        :param train_ivecs: the array with all training i-vectors
+        :param train_labels: the array with all training labels
+        :param test_ivecs: the array with all test i-vectors
+        :param test_labels: the array with all tesst labels
+        :param verbose: if true, losses and metrics are printed during training
+        :return: the trained model and the metrics from the last epoch
+        """
         self.logger.train_samples = train_labels.shape[0]
         self.logger.test_samples = test_labels.shape[0]
 
@@ -58,7 +83,14 @@ class SVMTrainer(Trainer):
         return model, metrics
 
     def test(self, model: SVC, test_ivectors: ndarray, test_labels: ndarray):
+        """
+        Test the SVM model on the training set.
 
+        :param model: the model that has been trained before
+        :param test_ivecs: the array with all test i-vectors
+        :param test_labels: the array with all tesst labels
+        :return: the test loss and the metrics
+        """
         predictions = model.predict(test_ivectors)
         metrics = Metrics(test_labels, predictions)
 

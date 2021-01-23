@@ -128,12 +128,6 @@ if __name__ == "__main__":
         action="store_true",
         help="Print training and testing metrics.",
     )
-    parser.add_argument(
-        "-k",
-        "--keep_model",
-        action="store_true",
-        help="Store the chosen model in a file.",
-    )
 
     # If cross validation is run, the original split cannot be used (hence
     # the mututally exclusive group).
@@ -160,6 +154,8 @@ if __name__ == "__main__":
 
     # TODO: The configuration parameters should be provided by a configuration
     # file in the future.
+    # Typical values SVM: 0.0001 < gamma < 10; 0.1 < c < 100
+    # kernel types: ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’
     params = {
         "n_epochs": 10,
         "batch_size": 10,

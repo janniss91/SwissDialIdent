@@ -12,10 +12,25 @@ from train_logger import TrainLogger
 
 class LogisticRegression(torch.nn.Module):
     def __init__(self, input_dim: int, output_dim: int):
+        """
+        A PyTorch neural network model that represents the
+        functionality of a Linear Regression classifier.
+
+        :param input_dim: input dimension = number of features in model (400)
+        :param output_dim: output dimension = number of output classes (4)
+        """
         super(LogisticRegression, self).__init__()
         self.linear = torch.nn.Linear(input_dim, output_dim)
 
     def forward(self, tensor: torch.FloatTensor):
+        """
+        Do the forward pass of the model.
+        This method is run when calling the LogisticRegression class.
+
+        :param tensor: the tensor that carries the input data (n_samples * 400)
+        :return: an output tensor containing probability values for the output
+        classes (n_samples * 4)
+        """
         return torch.sigmoid(self.linear(tensor))
 
 
@@ -27,6 +42,17 @@ class LogisticRegressionTrainer(Trainer):
         lr: float = 0.01,
         log_interval: int = 50,
     ):
+        """
+        Inherits from Trainer class.
+        This class handles the training and test processes of the LogisticRegression
+        model.
+
+        :param n_epochs: number of epochs
+        :param batch_size: the size of the batches
+        :param lr: the learning rate
+        :param log_interval: the interval at which logging and loss collection is
+        performed during training
+        """
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.lr = lr
@@ -48,6 +74,17 @@ class LogisticRegressionTrainer(Trainer):
         test_labels: ndarray = None,
         verbose: bool = False,
     ):
+        """
+        Train the Logistic Regression model.
+        The test run is embedded here.
+
+        :param train_ivecs: the array with all training i-vectors
+        :param train_labels: the array with all training labels
+        :param test_ivecs: the array with all test i-vectors
+        :param test_labels: the array with all tesst labels
+        :param verbose: if true, losses and metrics are printed during training
+        :return: the trained model and the metrics from the last epoch
+        """
         # Set up PyTorch compatible datasets and dataloader.
         train_dataset = SwissDialectDataset(train_ivecs, train_labels)
         test_dataset = SwissDialectDataset(test_ivecs, test_labels)
@@ -78,6 +115,7 @@ class LogisticRegressionTrainer(Trainer):
                 batch_labels = Variable(batch_labels)
                 optimizer.zero_grad()
                 outputs = model(ivector_batch)
+                print(outputs)
                 loss = criterion(outputs, batch_labels)
                 loss.backward()
                 optimizer.step()
@@ -116,6 +154,15 @@ class LogisticRegressionTrainer(Trainer):
         test_dataset: SwissDialectDataset,
         verbose: bool,
     ):
+        """
+        Test the Logistic Regression model on the training set.
+
+        :param model: the model that has been trained before
+        :param test_dataset: the test dataset that is made for PyCharm models
+        and contains i-vectors and dialect labels
+        :param verbose: if true, losses and metrics are printed during training
+        :return: the test loss and the metrics
+        """
         test_loader = DataLoader(dataset=test_dataset, batch_size=self.batch_size)
         criterion = torch.nn.CrossEntropyLoss()
 
@@ -141,6 +188,15 @@ class LogisticRegressionTrainer(Trainer):
         return metrics, test_loss
 
     def train_final_model(self, ivectors: ndarray, labels: ndarray, verbose: bool = True):
+        """
+        Train a model with the whole dataset after having chosen the best
+        model with cross validation.
+
+        :param ivectors: the array with all i-vectors
+        :param labels: the array with all labels
+        :param verbose: if true, losses and metrics are printed during training
+        :return: the trained final model
+        """
 
         dataset = SwissDialectDataset(ivectors, labels)
         data_loader = DataLoader(dataset=dataset, batch_size=self.batch_size)
