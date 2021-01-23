@@ -37,7 +37,18 @@ def select_model(
     k: int = 10,
     verbose: bool = False,
 ) -> Union[LogisticRegression, SVC]:
+    """
+    Select a best model from all model types with cross validation.
 
+    :param ivectors: all shuffled i-vectors from train and test set
+    :param labels: all shuffled (equivalent to i-vectors) labels from
+    train and test set
+    :param params: the dictionary of parameters for all models
+    :param k: determines the number of splits of cross validation
+    :param verbose: if true, losses and metrics are printed during training
+    """
+
+    all_models = []
     metrics_all_models = []
 
     for model_name, (model_type, trainer_type) in MODEL_CHOICE.items():
@@ -45,8 +56,9 @@ def select_model(
         trainer = trainer_type(**model_params)
         trainer.cross_validation(all_ivectors, all_labels, k=k, verbose=True)
         metrics_all_models.append(trainer.cv_metrics)
+        all_models.append(trainer.cv_models)
 
-    best_model = compare_metrics(metrics_all_models)
+    best_model = compare_metrics(all_models, metrics_all_models)
 
     return best_model
 
@@ -55,8 +67,27 @@ def compare_metrics(
     all_models: List[Union[LogisticRegression, SVC]],
     metrics_all_models: List[List[Tuple[str, Metrics]]],
 ):
-    # Todo: Put the metrics of all CVs from all models in here and compare.
-    pass
+    """
+    Compare the metrics of the different models to choose the best model.
+
+    At the moment only macro-averaged F1 is used as a metrics to determine
+    the best model.
+    A more sophisticated calculation could be inserted if necessary.
+
+    :param all_models: all models that have been trained during cross validation
+    :param metrics_all_models: the metrics models for all objects
+    :return: the model with the best macro-averaged F1 score
+    """
+    best_model = None
+    best_f1 = 0.0
+
+    for model, metrics in zip(all_models, metrics_all_models):
+        f1 = metrics.macroavg["f1-score"]
+        if f1 > best_f1:
+            best_f1 = f1
+            best_model = model
+
+    return best_model
 
 
 def train_single_model(
@@ -68,7 +99,17 @@ def train_single_model(
     params: Dict,
     verbose: bool = False,
 ) -> Union[LogisticRegression, SVC]:
+    """
+    Train a single model.
 
+    :param model_name: type of the model to be trained
+    :param train_ivectors: training i-vectors
+    :param train_labels: training i-vectors
+    :param test_ivectors: test i-vectors
+    :param test_labels: test i-vectors
+    :param params: the dictionary of parameters for all models
+    :param verbose: if true, losses and metrics are printed during training
+    """
     trainer_type = MODEL_CHOICE[model_name][1]
     model_params = {key: params[key] for key in PARAM_CHOICE[model_name]}
     trainer = trainer_type(**model_params)
@@ -91,7 +132,16 @@ def train_final_model(
     params: Dict,
     verbose: bool = False,
 ) -> Union[LogisticRegression, SVC]:
+    """
+    Train a final model with the whole dataset.
 
+    :param model_name: type of the model to be trained
+    :param ivectors: all shuffled i-vectors from train and test set
+    :param labels: all shuffled (equivalent to i-vectors) labels from
+    train and test set
+    :param params: the dictionary of parameters for all models
+    :param verbose: if true, losses and metrics are printed during training
+    """
     trainer_type = MODEL_CHOICE[model_name][1]
     model_params = {key: params[key] for key in PARAM_CHOICE[model_name]}
     trainer = trainer_type(**model_params)
