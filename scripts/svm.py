@@ -22,7 +22,7 @@ class SVMTrainer(Trainer):
         ignored by all other kernel functions
         :param max_iter: limit of iterations; no limit if it is -1
         """
-        self.c = 1.0
+        self.c = c
         # TODO: Include gamma as parameter. High gamma: more likely to overfit
         # gamma only applicable to non-linear kernels
         self.kernel = kernel
