@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 import os
 import pickle
 import time
@@ -12,6 +13,8 @@ from typing import Union
 from dataset import combine_data
 from dataset import load_ivectors
 from dataset import load_labels
+from inspect_data import feature_mean_sd_by_dialect
+from inspect_data import identify_useless_features
 from logistic_regression import LogisticRegression
 from logistic_regression import LogisticRegressionTrainer
 from metrics import Metrics
@@ -227,6 +230,12 @@ if __name__ == "__main__":
         train_labels = load_labels(train_txt_file)
         test_ivectors = load_ivectors(test_vec_file)
         test_labels = load_labels(test_txt_file)
+
+        all_means, all_sds = feature_mean_sd_by_dialect()
+        useless_features = identify_useless_features(all_means, all_sds)
+
+        train_ivectors = np.delete(train_ivectors, useless_features, axis=1)
+        test_ivectors = np.delete(test_ivectors, useless_features, axis=1)
 
         if args.single_model:
             model = train_single_model(
