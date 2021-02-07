@@ -1,7 +1,9 @@
+import argparse
 import csv
 import numpy as np
 import torch
 import torch.nn as nn
+import sys
 from tensorboardX import SummaryWriter
 from torch.autograd import Variable
 
@@ -62,7 +64,9 @@ class Generator(nn.Module):
         return out.squeeze()
 
 
-def generator_train_step(batch_size, discriminator, generator, gen_optimizer, criterion):
+def generator_train_step(
+    batch_size, discriminator, generator, gen_optimizer, criterion
+):
     gen_optimizer.zero_grad()
     z = Variable(torch.randn(batch_size, 100))
     fake_labels = Variable(torch.LongTensor(np.random.randint(0, 4, batch_size)))
@@ -75,7 +79,13 @@ def generator_train_step(batch_size, discriminator, generator, gen_optimizer, cr
 
 
 def discriminator_train_step(
-    batch_size, discriminator, generator, discr_optimizer, criterion, real_ivectors, labels
+    batch_size,
+    discriminator,
+    generator,
+    discr_optimizer,
+    criterion,
+    real_ivectors,
+    labels,
 ):
     discr_optimizer.zero_grad()
 
@@ -85,9 +95,7 @@ def discriminator_train_step(
 
     # Train with fake ivectors.
     z = Variable(torch.randn(batch_size, 100))
-    fake_labels = Variable(
-        torch.LongTensor(np.random.randint(0, 4, batch_size))
-    )
+    fake_labels = Variable(torch.LongTensor(np.random.randint(0, 4, batch_size)))
     fake_ivectors = generator(z, fake_labels)
     fake_validity = discriminator(fake_ivectors, fake_labels)
     fake_loss = criterion(fake_validity, Variable(torch.zeros(batch_size)))
@@ -105,102 +113,121 @@ def generate_ivector(generator, dialect):
     return ivector
 
 
+def store_generated_data(generator, num_samples):
+    dialects = [[x] * num_samples for x in (0, 1, 2, 3)]
+    dialects = [item for sublist in dialects for item in sublist]
+
+    with open(
+        "data/gan-ivectors-" + str(num_samples) + ".csv", "w"
+    ) as gen_ivec_file, open(
+        "data/gan-labels-" + str(num_samples) + ".txt", "w"
+    ) as gen_label_file:
+
+        ivec_writer = csv.writer(gen_ivec_file)
+        label_writer = csv.writer(gen_label_file, delimiter="\t")
+
+        for dialect in dialects:
+            gen_ivecs = generate_ivector(generator, dialect)
+            ivec_writer.writerow(gen_ivecs.tolist())
+
+            txt_file_out = ["GAN-generated artificial text", dialect]
+            label_writer.writerow(txt_file_out)
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    # parser.add_argument("config_file", help="A configuration file that specifies training parameters.")
+    # Train and config must always be used together.
     parser.add_argument(
-        "-s",
-        "--single_model",
-        choices=["LogisticRegression", "SVM"],
-        help="Train a single model.",
-    )
-    parser.add_argument(
-        "-f",
-        "--final_model",
-        choices=["LogisticRegression", "SVM"],
-        help="Train a single model with the entire dataset",
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
+        "-t",
+        "--train",
         action="store_true",
-        help="Print training and testing metrics.",
+        help="Train a GAN that can generate artificial ivectors.",
     )
+    # parser.add_argument("-c", "--config_file", help="A configuration file that specifies training parameters.")
+
+    # A model can be trained and then directly used for generation.
+    # Or a model stored in a file can be used (flag: --load_model).
+    parser.add_argument(
+        "-g",
+        "--generate",
+        type=int,
+        help="Generate new samples and specify the number of samples you want.",
+    )
+    parser.add_argument("-l", "--load_model", type=str, help="Use an existing model for generation.")
 
     args = parser.parse_args()
 
-    TRAIN_VEC_FILE = "data/train.vec"
-    TRAIN_TXT_FILE = "data/train.txt"
+    # Training process.
+    if args.train:
+        TRAIN_VEC_FILE = "data/train.vec"
+        TRAIN_TXT_FILE = "data/train.txt"
 
-    train_ivectors = load_ivectors(TRAIN_VEC_FILE)
-    train_labels = load_labels(TRAIN_TXT_FILE)
+        batch_size = 32
+        num_epochs = 1
+        lr = 1e-4
+        num_artifical_ivecs = 3000
 
-    dataset = SwissDialectDataset(train_ivectors, train_labels)
+        train_ivectors = load_ivectors(TRAIN_VEC_FILE)
+        train_labels = load_labels(TRAIN_TXT_FILE)
+        dataset = SwissDialectDataset(train_ivectors, train_labels)
+        data_loader = torch.utils.data.DataLoader(
+            dataset, batch_size=batch_size, shuffle=True
+        )
 
-    batch_size = 32
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        writer = SummaryWriter()
 
-    writer = SummaryWriter()
+        generator = Generator()
+        discriminator = Discriminator()
 
-    generator = Generator()
-    discriminator = Discriminator()
+        criterion = nn.BCELoss()
+        discr_optimizer = torch.optim.Adam(discriminator.parameters(), lr=lr)
+        gen_optimizer = torch.optim.Adam(generator.parameters(), lr=lr)
 
-    criterion = nn.BCELoss()
-    discr_optimizer = torch.optim.Adam(discriminator.parameters(), lr=1e-4)
-    gen_optimizer = torch.optim.Adam(generator.parameters(), lr=1e-4)
+        for epoch in range(num_epochs):
+            print("Epoch {}...".format(epoch + 1), end=" ")
+            for i, (ivectors, labels) in enumerate(data_loader):
 
-    num_epochs = 100
-    for epoch in range(num_epochs):
-        print("Epoch {}...".format(epoch + 1), end=" ")
-        for i, (ivectors, labels) in enumerate(data_loader):
+                step = epoch * len(data_loader) + i + 1
+                real_ivectors = Variable(ivectors)
+                labels = Variable(labels)
+                generator.train()
 
-            step = epoch * len(data_loader) + i + 1
-            real_ivectors = Variable(ivectors)
-            labels = Variable(labels)
-            generator.train()
+                d_loss = discriminator_train_step(
+                    len(real_ivectors),
+                    discriminator,
+                    generator,
+                    discr_optimizer,
+                    criterion,
+                    real_ivectors,
+                    labels,
+                )
 
-            d_loss = discriminator_train_step(
-                len(real_ivectors),
-                discriminator,
-                generator,
-                discr_optimizer,
-                criterion,
-                real_ivectors,
-                labels,
-            )
+                g_loss = generator_train_step(
+                    batch_size, discriminator, generator, gen_optimizer, criterion
+                )
 
-            g_loss = generator_train_step(
-                batch_size, discriminator, generator, gen_optimizer, criterion
-            )
+                writer.add_scalars("scalars", {"g_loss": g_loss, "d_loss": d_loss}, step)
 
-            writer.add_scalars("scalars", {"g_loss": g_loss, "d_loss": d_loss}, step)
+            print("Done!")
 
-        print("Done!")
+        store = input("\n\nDo you want to store the GAN generator? [yes|no]: ")
+        if store == "yes":
+            model_file_name = input("\n\nPlease a file name for the model: gan-")
+            torch.save(generator.state_dict(), "stored_models/gan-" + model_file_name + ".pt")
+        else:
+            print("Generator model is not stored.")
 
-        torch.save(generator.state_dict(), 'generator_state.pt')
+    # Generation Process.
+    if args.generate:
+        if args.load_model:
+            generator = Generator()
+            generator.load_state_dict(torch.load(args.load_model))
+            generator.eval()
+        if not args.load_model and not args.train:
+            print("You must either train a model or use a stored model for generation.")
+            sys.exit()
 
-
-    dialects = [[x]* 3000 for x in (0,1,2,3)]
-
-    flat_list = []
-    for sublist in dialects:
-        for item in sublist:
-            flat_list.append(item)
-
-    dialects = flat_list
-
-    with open("generated_utterances.csv", "w") as gen_file, open("gen"):
-        ivec_writer = csv.writer(gen_file)
-        for dialect in dialects:
-            gen_ivec = generate_ivector(generator, dialect)
-            ivec_writer.writerow(gen_ivec.tolist())
-
-
-    # Model loading process:
-
-    # model = Generator(*args, **kwargs)
-    # model.load_state_dict(torch.load(PATH))
-    # model.eval()
-    # generate_digit(model, dialect)
+        num_samples = args.generate
+        store_generated_data(generator, num_samples)
