@@ -197,10 +197,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    train_vec_file = "data/train.vec"
-    train_txt_file = "data/train.txt"
-    test_vec_file = "data/dev.vec"
-    test_txt_file = "data/dev.txt"
+    TRAIN_VEC_FILE = "data/train.vec"
+    TRAIN_TXT_FILE = "data/train.txt"
+    TEST_VEC_FILE = "data/dev.vec"
+    TEST_TXT_FILE = "data/dev.txt"
 
     # TODO: The configuration parameters should be provided by a configuration
     # file in the future.
@@ -223,10 +223,10 @@ if __name__ == "__main__":
 
     if args.original_split:
 
-        train_ivectors = load_ivectors(train_vec_file)
-        train_labels = load_labels(train_txt_file)
-        test_ivectors = load_ivectors(test_vec_file)
-        test_labels = load_labels(test_txt_file)
+        train_ivectors = load_ivectors(TRAIN_VEC_FILE)
+        train_labels = load_labels(TRAIN_TXT_FILE)
+        test_ivectors = load_ivectors(TEST_VEC_FILE)
+        test_labels = load_labels(TEST_TXT_FILE)
 
         if args.single_model:
             model = train_single_model(
@@ -246,7 +246,7 @@ if __name__ == "__main__":
 
     else:
         all_ivectors, all_labels = combine_data(
-            train_vec_file, train_txt_file, test_vec_file, test_txt_file
+            TRAIN_VEC_FILE, TRAIN_TXT_FILE, TEST_VEC_FILE, TEST_TXT_FILE
         )
 
         if args.cross_val:
