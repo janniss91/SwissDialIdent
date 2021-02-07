@@ -165,9 +165,8 @@ if __name__ == "__main__":
         TRAIN_TXT_FILE = "data/train.txt"
 
         batch_size = 32
-        num_epochs = 1
+        num_epochs = 100
         lr = 1e-4
-        num_artifical_ivecs = 3000
 
         train_ivectors = load_ivectors(TRAIN_VEC_FILE)
         train_labels = load_labels(TRAIN_TXT_FILE)
@@ -214,7 +213,7 @@ if __name__ == "__main__":
 
         store = input("\n\nDo you want to store the GAN generator? [yes|no]: ")
         if store == "yes":
-            model_file_name = input("\n\nPlease a file name for the model: gan-")
+            model_file_name = input("\n\nPlease choose a file name for the model: gan-")
             torch.save(generator.state_dict(), "stored_models/gan-" + model_file_name + ".pt")
         else:
             print("Generator model is not stored.")
