@@ -51,7 +51,8 @@ The training set contains 14279 utterances and the development set contains 4530
 ### Training
 
 It is possible to train a single model (-s), perform cross validation (-v) to select a best model or train a final model (-f) on the whole data set.  
-Besides, there is the chance to use the original train-test split or shuffle the data (-o).
+Besides, there is the chance to use the original train-test split (-o).  
+Now it is also possible to include GAN-generated data into the training process (-g). A file name must be given as an argument.  
 Eventually, you can choose to train with print output or not (-v).
 
 Examples:
@@ -80,6 +81,33 @@ Models can be stored in the repository.
 At the end of each training run you are asked whether you want to store the output model or not.
 
 Models are stored in the directory `stored_models`.
+
+## Data Manipulation
+
+The experiments with the data in this project have shown a strong influence of the underlying speaker representation on dialect identification.  
+Different approaches have been taken to manipulate the data in such a way that a stronger emphasis is on the dialect differences.
+
+### CGAN
+
+A Conditional Generative Adversarial has been and can be trained to create new data, which creates ivectors (representing pseudo-utterances) from assumed pseudo-speakers that do not belong to the original dataset.
+
+There are already CGAN models, which can be used for ivector generation:
+
+    python3 scripts/cgan.py -g file_name.pt
+
+A new model can also be trained:
+
+    python3 scripts/cgan.py -t
+
+It is also possible to train a new model and generate from it directly:
+
+    python3 scripts/cgan.py -t -g file_name.pt
+
+After training a prompt will ask whether the model should be stored.  
+Models are stored in the directory `stored_models`.
+
+Once configuration files are supported, the settings for the GAN can be changed through the configuration file.  
+At the moment values will have to be changed directly in the script.
 
 ## Configuration Files
 

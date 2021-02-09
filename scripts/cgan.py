@@ -1,3 +1,8 @@
+"""
+This implementation of a Conditional GAN was strongly influenced by:
+https://github.com/arturml/mnist-cgan
+"""
+
 import argparse
 import csv
 import numpy as np
@@ -9,7 +14,10 @@ from torch.autograd import Variable
 
 from dataset import load_ivectors
 from dataset import load_labels
-from dataset import SwissDialectDataset
+from dataset import SwissDialectDataset 
+
+
+REV_DIALECT_MAP = {0: "LU", 1: "BE", 2: "ZH", 3:"BS"}
 
 
 class Discriminator(nn.Module):
@@ -22,13 +30,13 @@ class Discriminator(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(410, 512),  # 410 is num features + embeddings
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.3),
+            nn.Dropout(0.5),
             nn.Linear(512, 256),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.3),
+            nn.Dropout(0.5),
             nn.Linear(256, 128),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.3),
+            nn.Dropout(0.5),
             nn.Linear(128, 1),  # The 1 is the number converted to a probability.
             nn.Sigmoid(),
         )
@@ -49,10 +57,13 @@ class Generator(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(110, 128),  # 110 is 100 random datapoints + embeddings
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.5),
             nn.Linear(128, 256),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.5),
             nn.Linear(256, 512),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.5),
             nn.Linear(512, 400),
             nn.Tanh(),
         )
@@ -118,19 +129,19 @@ def store_generated_data(generator, num_samples):
     dialects = [item for sublist in dialects for item in sublist]
 
     with open(
-        "data/gan-ivectors-" + str(num_samples) + ".csv", "w"
+        "data/gan-ivectors-" + str(num_samples) + ".vec", "w"
     ) as gen_ivec_file, open(
         "data/gan-labels-" + str(num_samples) + ".txt", "w"
     ) as gen_label_file:
 
-        ivec_writer = csv.writer(gen_ivec_file)
+        ivec_writer = csv.writer(gen_ivec_file, delimiter=" ")
         label_writer = csv.writer(gen_label_file, delimiter="\t")
 
         for dialect in dialects:
             gen_ivecs = generate_ivector(generator, dialect)
             ivec_writer.writerow(gen_ivecs.tolist())
 
-            txt_file_out = ["GAN-generated artificial text", dialect]
+            txt_file_out = ["GAN-generated artificial text", REV_DIALECT_MAP[dialect]]
             label_writer.writerow(txt_file_out)
 
 
