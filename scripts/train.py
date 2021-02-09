@@ -1,6 +1,8 @@
 import argparse
+import numpy as np
 import os
 import pickle
+import re
 import time
 from numpy import ndarray
 from sklearn.svm import SVC
@@ -178,6 +180,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Print training and testing metrics.",
     )
+    parser.add_argument(
+        "-g",
+        "--gan_ivec_file",
+        type=str,
+        help="Include artificially created GAN data from specified file.",
+    )
 
     # If cross validation is run, the original split cannot be used (hence
     # the mututally exclusive group).
@@ -188,6 +196,8 @@ if __name__ == "__main__":
         action="store_true",
         help="Select a model with cross_validation.",
     )
+
+    # TODO: Make original split the default.
     group.add_argument(
         "-o",
         "--original_split",
@@ -197,10 +207,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    train_vec_file = "data/train.vec"
-    train_txt_file = "data/train.txt"
-    test_vec_file = "data/dev.vec"
-    test_txt_file = "data/dev.txt"
+    TRAIN_VEC_FILE = "data/train.vec"
+    TRAIN_TXT_FILE = "data/train.txt"
+    TEST_VEC_FILE = "data/dev.vec"
+    TEST_TXT_FILE = "data/dev.txt"
 
     # TODO: The configuration parameters should be provided by a configuration
     # file in the future.
@@ -223,10 +233,21 @@ if __name__ == "__main__":
 
     if args.original_split:
 
-        train_ivectors = load_ivectors(train_vec_file)
-        train_labels = load_labels(train_txt_file)
-        test_ivectors = load_ivectors(test_vec_file)
-        test_labels = load_labels(test_txt_file)
+        train_ivectors = load_ivectors(TRAIN_VEC_FILE)
+        train_labels = load_labels(TRAIN_TXT_FILE)
+        test_ivectors = load_ivectors(TEST_VEC_FILE)
+        test_labels = load_labels(TEST_TXT_FILE)
+
+        if args.gan_ivec_file:
+            gan_ivec_file = args.gan_ivec_file
+            split_fname = re.split("-|\.", gan_ivec_file)
+            gan_txt_file = split_fname[0] + "-labels-" + split_fname[2] + ".txt"
+
+            gan_ivectors = load_ivectors(args.gan_ivec_file)
+            gan_labels = load_labels(gan_txt_file)
+
+            train_ivectors = np.concatenate((train_ivectors, gan_ivectors), axis=0)
+            train_labels = np.concatenate((train_labels, gan_labels), axis=0)
 
         if args.single_model:
             model = train_single_model(
@@ -245,8 +266,12 @@ if __name__ == "__main__":
             )
 
     else:
+        if args.gan_ivec_file:
+            print("At the moment, you can use GAN-generated data only with single model training.")
+            print("The GAN data will not be part of the training.")
+
         all_ivectors, all_labels = combine_data(
-            train_vec_file, train_txt_file, test_vec_file, test_txt_file
+            TRAIN_VEC_FILE, TRAIN_TXT_FILE, TEST_VEC_FILE, TEST_TXT_FILE
         )
 
         if args.cross_val:

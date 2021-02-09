@@ -115,7 +115,6 @@ class LogisticRegressionTrainer(Trainer):
                 batch_labels = Variable(batch_labels)
                 optimizer.zero_grad()
                 outputs = model(ivector_batch)
-                print(outputs)
                 loss = criterion(outputs, batch_labels)
                 loss.backward()
                 optimizer.step()
