@@ -1,6 +1,7 @@
 env
 *__pycache__
 train_logs/.*
+runs
 
 #  All directories starting with a dot will be ignored.
 .*/

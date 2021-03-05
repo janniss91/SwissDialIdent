@@ -10,31 +10,30 @@ from trainer import Trainer
 from train_logger import TrainLogger
 
 
-class LogisticRegression(torch.nn.Module):
+class FeedForward(torch.nn.Module):
     def __init__(self, input_dim: int, output_dim: int):
-        """
-        A PyTorch neural network model that represents the
-        functionality of a Linear Regression classifier.
+        super().__init__()
 
-        :param input_dim: input dimension = number of features in model (400)
-        :param output_dim: output dimension = number of output classes (4)
-        """
-        super(LogisticRegression, self).__init__()
-        self.linear = torch.nn.Linear(input_dim, output_dim)
+        self.model = torch.nn.Sequential(
+            torch.nn.Linear(input_dim, 256),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(256, 128),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(128, 64),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(64, output_dim),
+            torch.nn.Sigmoid(),
+        )
 
     def forward(self, tensor: torch.FloatTensor):
-        """
-        Do the forward pass of the model.
-        This method is run when calling the LogisticRegression class.
-
-        :param tensor: the tensor that carries the input data (n_samples * 400)
-        :return: an output tensor containing probability values for the output
-        classes (n_samples * 4)
-        """
-        return torch.sigmoid(self.linear(tensor))
+        out = self.model(tensor)
+        return out
 
 
-class LogisticRegressionTrainer(Trainer):
+class FeedForwardTrainer(Trainer):
     def __init__(
         self,
         n_epochs: int = 10,
@@ -64,7 +63,7 @@ class LogisticRegressionTrainer(Trainer):
 
         # It is important that the super initialization happens after
         # setting the trainlogger attributes.
-        super(LogisticRegressionTrainer, self).__init__()
+        super(FeedForwardTrainer, self).__init__()
 
     def train(
         self,
@@ -93,7 +92,7 @@ class LogisticRegressionTrainer(Trainer):
         # Initialize and prepare model for training.
         input_dim = train_dataset.n_features
         output_dim = train_dataset.n_classes
-        model = LogisticRegression(input_dim, output_dim)
+        model = FeedForward(input_dim, output_dim)
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
 
@@ -149,7 +148,7 @@ class LogisticRegressionTrainer(Trainer):
 
     def test(
         self,
-        model: LogisticRegression,
+        model: FeedForward,
         test_dataset: SwissDialectDataset,
         verbose: bool,
     ):
@@ -202,7 +201,7 @@ class LogisticRegressionTrainer(Trainer):
 
         input_dim = dataset.n_features
         output_dim = dataset.n_classes
-        model = LogisticRegression(input_dim, output_dim)
+        model = FeedForward(input_dim, output_dim)
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
 

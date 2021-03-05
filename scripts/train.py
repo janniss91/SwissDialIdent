@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 import os
 import pickle
+import re
 import time
 from numpy import ndarray
 from sklearn.svm import SVC
@@ -13,6 +14,8 @@ from typing import Union
 from dataset import combine_data
 from dataset import load_ivectors
 from dataset import load_labels
+from feed_forward import FeedForward
+from feed_forward import FeedForwardTrainer
 from inspect_data import feature_mean_sd_by_dialect
 from inspect_data import identify_useless_features
 from logistic_regression import LogisticRegression
@@ -25,11 +28,13 @@ STORED_MODEL_DIR = "stored_models"
 MODEL_CHOICE = {
     "LogisticRegression": (LogisticRegression, LogisticRegressionTrainer),
     "SVM": (SVC, SVMTrainer),
+    "FeedForward": (FeedForward, FeedForwardTrainer),
 }
 
 PARAM_CHOICE = {
     "LogisticRegression": ("n_epochs", "batch_size", "lr", "log_interval"),
     "SVM": ("c", "kernel", "degree", "max_iter"),
+    "FeedForward": ("n_epochs", "batch_size", "lr", "log_interval")
 }
 
 
@@ -39,7 +44,7 @@ def select_model(
     params: Dict,
     k: int = 10,
     verbose: bool = False,
-) -> Union[LogisticRegression, SVC]:
+) -> Union[LogisticRegression, SVC, FeedForward]:
     """
     Select a best model from all model types with cross validation.
 
@@ -67,7 +72,7 @@ def select_model(
 
 
 def compare_metrics(
-    all_models: List[Union[LogisticRegression, SVC]],
+    all_models: List[Union[LogisticRegression, SVC, FeedForward]],
     metrics_all_models: List[List[Tuple[str, Metrics]]],
 ):
     """
@@ -101,7 +106,7 @@ def train_single_model(
     test_labels: ndarray,
     params: Dict,
     verbose: bool = False,
-) -> Union[LogisticRegression, SVC]:
+) -> Union[LogisticRegression, SVC, FeedForward]:
     """
     Train a single model.
 
@@ -134,7 +139,7 @@ def train_final_model(
     labels: ndarray,
     params: Dict,
     verbose: bool = False,
-) -> Union[LogisticRegression, SVC]:
+) -> Union[LogisticRegression, SVC, FeedForward]:
     """
     Train a final model with the whole dataset.
 
@@ -166,13 +171,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "-s",
         "--single_model",
-        choices=["LogisticRegression", "SVM"],
+        choices=["LogisticRegression", "SVM", "FeedForward"],
         help="Train a single model.",
     )
     parser.add_argument(
         "-f",
         "--final_model",
-        choices=["LogisticRegression", "SVM"],
+        choices=["LogisticRegression", "SVM", "FeedForward"],
         help="Train a single model with the entire dataset",
     )
     parser.add_argument(
@@ -180,6 +185,12 @@ if __name__ == "__main__":
         "--verbose",
         action="store_true",
         help="Print training and testing metrics.",
+    )
+    parser.add_argument(
+        "-g",
+        "--gan_ivec_file",
+        type=str,
+        help="Include artificially created GAN data from specified file.",
     )
 
     # If cross validation is run, the original split cannot be used (hence
@@ -191,6 +202,8 @@ if __name__ == "__main__":
         action="store_true",
         help="Select a model with cross_validation.",
     )
+
+    # TODO: Make original split the default.
     group.add_argument(
         "-o",
         "--original_split",
@@ -200,10 +213,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    train_vec_file = "data/train.vec"
-    train_txt_file = "data/train.txt"
-    test_vec_file = "data/dev.vec"
-    test_txt_file = "data/dev.txt"
+    TRAIN_VEC_FILE = "data/train.vec"
+    TRAIN_TXT_FILE = "data/train.txt"
+    TEST_VEC_FILE = "data/dev.vec"
+    TEST_TXT_FILE = "data/dev.txt"
 
     # TODO: The configuration parameters should be provided by a configuration
     # file in the future.
@@ -226,10 +239,22 @@ if __name__ == "__main__":
 
     if args.original_split:
 
-        train_ivectors = load_ivectors(train_vec_file)
-        train_labels = load_labels(train_txt_file)
-        test_ivectors = load_ivectors(test_vec_file)
-        test_labels = load_labels(test_txt_file)
+        train_ivectors = load_ivectors(TRAIN_VEC_FILE)
+        train_labels = load_labels(TRAIN_TXT_FILE)
+        test_ivectors = load_ivectors(TEST_VEC_FILE)
+        test_labels = load_labels(TEST_TXT_FILE)
+
+        if args.gan_ivec_file:
+            gan_ivec_file = args.gan_ivec_file
+            split_path = os.path.split(gan_ivec_file)
+            split_fname = re.split("-|\.", split_path[1])
+            gan_txt_file = os.path.join(split_path[0], split_fname[0] + "-labels-" + split_fname[2] + ".txt")
+
+            gan_ivectors = load_ivectors(args.gan_ivec_file)
+            gan_labels = load_labels(gan_txt_file)
+
+            train_ivectors = np.concatenate((train_ivectors, gan_ivectors), axis=0)
+            train_labels = np.concatenate((train_labels, gan_labels), axis=0)
 
         all_means, all_sds = feature_mean_sd_by_dialect()
         useless_features = identify_useless_features(all_means, all_sds)
@@ -254,8 +279,12 @@ if __name__ == "__main__":
             )
 
     else:
+        if args.gan_ivec_file:
+            print("At the moment, you can use GAN-generated data only with single model training.")
+            print("The GAN data will not be part of the training.")
+
         all_ivectors, all_labels = combine_data(
-            train_vec_file, train_txt_file, test_vec_file, test_txt_file
+            TRAIN_VEC_FILE, TRAIN_TXT_FILE, TEST_VEC_FILE, TEST_TXT_FILE
         )
 
         if args.cross_val:

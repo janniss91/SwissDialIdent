@@ -4,14 +4,14 @@ import numpy as np
 from dataset import load_ivectors
 from dataset import load_labels
 
-train_vec_file = "data/train.vec"
-train_txt_file = "data/train.txt"
-
-train_ivectors = load_ivectors(train_vec_file)
-train_labels = load_labels(train_txt_file)
-
 
 def feature_mean_sd_by_dialect():
+    train_vec_file = "data/train.vec"
+    train_txt_file = "data/train.txt"
+
+    train_ivectors = load_ivectors(train_vec_file)
+    train_labels = load_labels(train_txt_file)
+
     # Put the data for the dialects in 4 buckets.
     data_per_dialect = {0: [], 1: [], 2: [], 3: []}
     for ivector, dialect in zip(train_ivectors, train_labels):
@@ -65,8 +65,7 @@ def identify_useless_features(all_means, all_sds):
     return useless_features
 
 
-
-def plot_single_feature(column: int):
+def plot_single_feature(column: int, train_ivectors, train_labels):
     """
     Plot a single feature by dialect.
     This makes it possible to identify whether different dialects
@@ -84,8 +83,18 @@ def plot_single_feature(column: int):
 
     column_by_dialect = {dialect: np.array(values) for dialect, values in column_by_dialect.items()}
 
+    # DIALECT_MAP = {"LU": 0, "BE": 1, "ZH": 2, "BS": 3}
     fig, axs = plt.subplots(4)
+    axs[0].title.set_text("Lucerne")
+    axs[1].title.set_text("Bern")
+    axs[2].title.set_text("Zurich")
+    axs[3].title.set_text("Basel")
+    for ax in axs:
+        ax.set_xlabel('feature value', loc="right")
+        ax.set_ylabel('no. utterance', loc="top")
+
     fig.suptitle("Feature " + str(column + 1))
+    fig.subplots_adjust(hspace=0.7)
 
     for plot_num in range(4):
         dialect_values = column_by_dialect[plot_num]
@@ -94,21 +103,3 @@ def plot_single_feature(column: int):
     mng = plt.get_current_fig_manager()
     mng.resize(*mng.window.maxsize())
     plt.show()
-
-
-if __name__ == "__main__":
-
-    all_means, all_sds = feature_mean_sd_by_dialect()
-
-    print(identify_useless_features(all_means, all_sds))
-
-    # for num in range(20):
-    #     plot_single_feature(num)
-
-# Not: 1
-# Value 2 has different means
-# 3 dfferent means
-# 4
-# 5 has lots of outliers to the right for class 2 (in range 0 to 3) -> Zürich, one speaker very different?
-# 6 has very different variances
-# 7 dialect 0 (Lucerne) has very different
