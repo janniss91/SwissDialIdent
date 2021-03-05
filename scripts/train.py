@@ -197,7 +197,7 @@ if __name__ == "__main__":
     manipul_group.add_argument(
         "-r",
         "--feature_removal",
-        type=str,
+        action="store_true",
         help="Remove unncesessary features from the data.",
     )
 
@@ -228,8 +228,6 @@ if __name__ == "__main__":
 
     # TODO: The configuration parameters should be provided by a configuration
     # file in the future.
-    # Typical values SVM: 0.0001 < gamma < 10; 0.1 < c < 100
-    # kernel types: ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’
     params = {
         "n_epochs": 10,
         "batch_size": 10,
