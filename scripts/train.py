@@ -16,6 +16,8 @@ from dataset import load_ivectors
 from dataset import load_labels
 from feed_forward import FeedForward
 from feed_forward import FeedForwardTrainer
+from inspect_data import feature_mean_sd_by_dialect
+from inspect_data import identify_useless_features
 from logistic_regression import LogisticRegression
 from logistic_regression import LogisticRegressionTrainer
 from metrics import Metrics
@@ -184,11 +186,19 @@ if __name__ == "__main__":
         action="store_true",
         help="Print training and testing metrics.",
     )
-    parser.add_argument(
+
+    manipul_group = parser.add_mutually_exclusive_group()
+    manipul_group.add_argument(
         "-g",
         "--gan_ivec_file",
         type=str,
         help="Include artificially created GAN data from specified file.",
+    )
+    manipul_group.add_argument(
+        "-r",
+        "--feature_removal",
+        action="store_true",
+        help="Remove unncesessary features from the data.",
     )
 
     # If cross validation is run, the original split cannot be used (hence
@@ -218,8 +228,6 @@ if __name__ == "__main__":
 
     # TODO: The configuration parameters should be provided by a configuration
     # file in the future.
-    # Typical values SVM: 0.0001 < gamma < 10; 0.1 < c < 100
-    # kernel types: ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’
     params = {
         "n_epochs": 10,
         "batch_size": 10,
@@ -253,6 +261,13 @@ if __name__ == "__main__":
 
             train_ivectors = np.concatenate((train_ivectors, gan_ivectors), axis=0)
             train_labels = np.concatenate((train_labels, gan_labels), axis=0)
+
+        if args.feature_removal:
+            all_means, all_sds = feature_mean_sd_by_dialect()
+            useless_features = identify_useless_features(all_means, all_sds)
+
+            train_ivectors = np.delete(train_ivectors, useless_features, axis=1)
+            test_ivectors = np.delete(test_ivectors, useless_features, axis=1)
 
         if args.single_model:
             model = train_single_model(
